@@ -35,6 +35,12 @@ class Student < ApplicationRecord
     nil
   end
 
+  def self.find_by_student_id(student_id)
+    Rails.cache.fetch("data::students::#{student_id}", expires_in: 1.hour) do
+      self.find_by(student_id: student_id)
+    end
+  end
+
   def equipments
     super&.split(",") || []
   end

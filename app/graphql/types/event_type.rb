@@ -2,7 +2,7 @@ module Types
   class PickupType < Types::Base::Object
     field :type, String, null: false
     field :rerun, Boolean, null: false
-    field :student_id, String, null: false
+    field :student, StudentType, null: false
   end
 
   class VideoType < Types::Base::Object
