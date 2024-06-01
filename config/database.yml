@@ -21,3 +21,8 @@ test:
 
 production:
   <<: *default
+  database: <%= ENV["BAQL_DATABASE_NAME"] || "baql_production" %>
+  username: <%= ENV["BAQL_DATABASE_USERNAME"] %>
+  password: <%= ENV["BAQL_DATABASE_PASSWORD"] %>
+  host: <%= ENV["BAQL_DATABASE_HOST"] %>
+  port: <%= ENV["BAQL_DATABASE_PORT"] %>
