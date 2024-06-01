@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_05_26_080208) do
+ActiveRecord::Schema[7.1].define(version: 2024_06_01_170429) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -47,6 +47,22 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_26_080208) do
     t.datetime "updated_at", null: false
     t.index ["raid_id"], name: "index_raids_on_raid_id", unique: true
     t.index ["since"], name: "index_raids_on_since"
+  end
+
+  create_table "students", force: :cascade do |t|
+    t.string "student_id", null: false
+    t.string "name", null: false
+    t.string "school", null: false
+    t.integer "initial_tier", null: false
+    t.string "attack_type", null: false
+    t.string "defense_type", null: false
+    t.string "role", null: false
+    t.string "equipments"
+    t.boolean "released", default: false, null: false
+    t.bigint "order", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["student_id"], name: "index_students_on_student_id", unique: true
   end
 
 end
