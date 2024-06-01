@@ -1,24 +1,25 @@
-# README
+# BAQL
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+> Blue Archive over GraphQL
 
-Things you may want to cover:
+Use Blue Archive's game data via GraphQL.  
+Used by [mollulog.net](https://mollulog.net).
 
-* Ruby version
+## Development
 
-* System dependencies
+### Prerequisites
 
-* Configuration
+- Ruby 3.3+
+- Docker
 
-* Database creation
+### Run Server
 
-* Database initialization
+```bash
+docker compose up -d
 
-* How to run the test suite
+gem install bundler
 
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+bundle
+bundle exec rails db:prepare
+bundle exec rails server
+```
