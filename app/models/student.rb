@@ -17,19 +17,20 @@ class Student < ApplicationRecord
 
   def self.sync!
     SchaleDB::Data.students.each do |row|
-      Student.find_or_create_by!(student_id: row["Id"]) do |student|
-        student.update!(
-          name:         row["Name"],
-          school:       row["School"].downcase.gsub(/^etc$/, "others"),
-          initial_tier: row["StarGrade"],
-          attack_type:  SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
-          defense_type: SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
-          role:         row["SquadType"] == "Main" ? "striker" : "special",
-          released:     row["IsReleased"][1],
-          equipments:   row["Equipment"].map(&:downcase).join(","),
-          order:        row["DefaultOrder"],
-        )
-      end
+      student = Student.find_or_initialize_by(student_id: row["Id"])
+      student.update!(
+        name:         row["Name"],
+        school:       row["School"].downcase.gsub(/^etc$/, "others"),
+        initial_tier: row["StarGrade"],
+        attack_type:  SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
+        defense_type: SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
+        role:         row["SquadType"] == "Main" ? "striker" : "special",
+        released:     row["IsReleased"][1],
+        equipments:   row["Equipment"].map(&:downcase).join(","),
+        order:        row["DefaultOrder"],
+      )
+
+      Rails.logger.info("Student #{student.name}(#{student.student_id}) has been updated") if student.saved_change_to_released?
     end
 
     nil

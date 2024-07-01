@@ -1,3 +1,5 @@
+require "net/http"
+
 module SchaleDB
   class Data
     HOST = "https://raw.githubusercontent.com/SchaleDB/SchaleDB/main"
