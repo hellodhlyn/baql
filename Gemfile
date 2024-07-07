@@ -16,6 +16,9 @@ gem "puma"
 gem "tzinfo-data"
 gem "bootsnap", require: false
 
+# Monitoring
+gem "newrelic_rpm"
+
 ##### Temporary fix for Ruby 3.3.3
 # Needed until Ruby 3.3.4 is released https://github.com/ruby/ruby/pull/11006
 gem 'net-pop', github: 'ruby/net-pop'

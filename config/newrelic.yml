@@ -1,0 +1,19 @@
+common: &default_settings
+  license_key: "YOUR_LICENSE_KEY"
+  app_name: "BAQL"
+
+  # Enable the agent manually by environment variable
+  #   NEW_RELIC_AGENT_ENABLED=true
+  agent_enabled: false
+
+development:
+  <<: *default_settings
+  log_level: debug
+
+test:
+  <<: *default_settings
+  log_level: debug
+
+production:
+  <<: *default_settings
+  log_level: info
