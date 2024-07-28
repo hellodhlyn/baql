@@ -5,7 +5,7 @@ RSpec.describe Event, type: :model do
     let(:event) do
       pickups = [
         {"type":"usual","rerun":false,"studentId":"10089"},
-        {"type":"usual","rerun":false,"studentId":"10088","studentName":"카요코(드레스)"},
+        {"type":"usual","rerun":false,"studentName":"카요코(드레스)"},
       ]
       FactoryBot.create(:event, pickups: pickups)
     end

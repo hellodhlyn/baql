@@ -10,7 +10,7 @@ class Event < ApplicationRecord
   validates :type, inclusion: { in: EVENT_TYPES }
 
   Pickup = Data.define(:type, :rerun, :student_id, :student_name) do |data|
-    def initialize(type:, rerun:, student_id:, student_name: nil)
+    def initialize(type:, rerun:, student_id: nil, student_name: nil)
       super
     end
 
