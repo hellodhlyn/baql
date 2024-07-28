@@ -8,7 +8,8 @@ module Types
 
     field :type, PickupTypeEnum, null: false
     field :rerun, Boolean, null: false
-    field :student, StudentType, null: false
+    field :student, StudentType, null: true
+    field :student_name, String, null: false
   end
 
   class VideoType < Types::Base::Object

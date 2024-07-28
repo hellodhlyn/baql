@@ -9,8 +9,13 @@ class Event < ApplicationRecord
 
   validates :type, inclusion: { in: EVENT_TYPES }
 
-  Pickup = Data.define(:type, :rerun, :student_id) do |data|
+  Pickup = Data.define(:type, :rerun, :student_id, :student_name) do |data|
+    def initialize(type:, rerun:, student_id:, student_name: nil)
+      super
+    end
+
     def student = Student.find_by_student_id(student_id)
+    def student_name = student&.name || to_h[:student_name]
   end
 
   Video = Data.define(:title, :youtube, :start)
