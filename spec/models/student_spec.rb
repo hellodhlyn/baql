@@ -1,6 +1,18 @@
 require "rails_helper"
 
 RSpec.describe Student, type: :model do
+  describe ".all_without_multiclass" do
+    before do
+      FactoryBot.create(:student, student_id: "10098", multiclass_id: "10098")
+      FactoryBot.create(:student, student_id: "10099", multiclass_id: "10098")
+    end
+
+    it "returns all students except for multiclass students" do
+      expect(Student.all.pluck(:student_id)).to contain_exactly("10098", "10099")
+      expect(Student.all_without_multiclass.pluck(:student_id)).to contain_exactly("10098")
+    end
+  end
+
   describe ".sync!" do
     subject { Student.sync! }
 

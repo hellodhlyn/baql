@@ -1,4 +1,8 @@
 class Student < ApplicationRecord
+  after_save :flush_cache
+
+  scope :all_without_multiclass, -> { where("multiclass_id is null or multiclass_id = student_id") }
+
   class SchaleDBMap
     ATTACK_TYPES = {
       "Explosion" => "explosive",
@@ -37,12 +41,22 @@ class Student < ApplicationRecord
   end
 
   def self.find_by_student_id(student_id)
-    Rails.cache.fetch("data::students::#{student_id}", expires_in: 1.hour) do
+    Rails.cache.fetch(cache_key(student_id), expires_in: 1.hour) do
       self.find_by(student_id: student_id)
     end
   end
 
   def equipments
     super&.split(",") || []
+  end
+
+  private
+
+  def self.cache_key(student_id)
+    "data::students::#{student_id}"
+  end
+
+  def flush_cache
+    Rails.cache.delete(self.class.cache_key(student_id))
   end
 end
