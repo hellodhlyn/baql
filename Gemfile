@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "~> 3.3.3"
+ruby "~> 3.3.4"
 
 # Rails
 gem "rails", "~> 7.1.3"
@@ -18,11 +18,6 @@ gem "bootsnap", require: false
 
 # Monitoring
 gem "newrelic_rpm"
-
-##### Temporary fix for Ruby 3.3.3
-# Needed until Ruby 3.3.4 is released https://github.com/ruby/ruby/pull/11006
-gem 'net-pop', github: 'ruby/net-pop'
-#####
 
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ]
