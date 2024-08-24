@@ -49,6 +49,7 @@ RSpec.describe Event, type: :model do
         )
 
         expect(subject.first.rewards).to all(be_a(Event::StageReward))
+        expect(subject.first.rewards.size).to eq(3)
         expect(subject.first.rewards.first.item).to be_a(Item)
           .and have_attributes(
             item_id: "80390",

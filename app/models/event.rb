@@ -32,7 +32,9 @@ class Event < ApplicationRecord
 
       event_stages = SchaleDB::V1::Data.events["Stages"].select { |id, stage| stage["EventId"] == event_index }.values
       event_stages.map do |stage|
-        rewards = stage["Rewards"]["Jp"].select { |reward| reward["Type"] == "Item" }.map do |reward|
+        rewards = stage["Rewards"]["Jp"].select do |reward|
+          reward["Type"] == "Item" && (reward["Chance"].nil? || reward["Chance"] >= 1) && reward["RewardType"].nil?
+        end.map do |reward|
           item = items[reward["Id"]] ||= Item.find_by_item_id(reward["Id"].to_s)
           StageReward.new(item, reward["Amount"])
         end
