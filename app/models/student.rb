@@ -41,7 +41,7 @@ class Student < ApplicationRecord
   end
 
   def self.find_by_student_id(student_id)
-    Rails.cache.fetch(cache_key(student_id), expires_in: 1.hour) do
+    Rails.cache.fetch(cache_key(student_id), expires_in: 1.minute) do
       self.find_by(student_id: student_id)
     end
   end

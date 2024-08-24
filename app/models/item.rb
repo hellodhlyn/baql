@@ -7,9 +7,7 @@ class Item
 
   def self.find_by_item_id(item_id)
     Rails.cache.fetch("data::items::#{item_id}", expires_in: 1.minute) do
-      raw_items = Rails.cache.fetch("data::items::all_v1", expires_in: 1.hour) do
-        SchaleDB::V1::Data.items
-      end
+      raw_items = Rails.cache.fetch("data::items::all_v1", expires_in: 1.hour) { SchaleDB::V1::Data.items }
       return nil unless raw_items.key?(item_id)
 
       raw_item = raw_items[item_id]

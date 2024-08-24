@@ -28,10 +28,13 @@ class Event < ApplicationRecord
 
   def stages
     Rails.cache.fetch("data::events::#{id}::stages", expires_in: 1.hour) do
+      items = {}
+
       event_stages = SchaleDB::V1::Data.events["Stages"].select { |id, stage| stage["EventId"] == event_index }.values
       event_stages.map do |stage|
         rewards = stage["Rewards"]["Jp"].select { |reward| reward["Type"] == "Item" }.map do |reward|
-          StageReward.new(Item.find_by_item_id(reward["Id"].to_s), reward["Amount"])
+          item = items[reward["Id"]] ||= Item.find_by_item_id(reward["Id"].to_s)
+          StageReward.new(item, reward["Amount"])
         end
         entry_ap = stage["EntryCost"]&.find { |item_id, _| item_id == 5 }&.last || nil
         Stage.new(stage["Name"], stage["Difficulty"], stage["Stage"].to_s, entry_ap, rewards)
