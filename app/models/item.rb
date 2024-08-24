@@ -15,7 +15,7 @@ class Item
         item.item_id = raw_item["Id"].to_s
         item.name = raw_item["Name"]
         item.image_id = raw_item["Icon"]
-        item.event_bonuses = raw_item["EventBonus"]["Jp"]&.map do |student_id, ratio_raw|
+        item.event_bonuses = raw_item["EventBonus"]&.[]("Jp")&.map do |student_id, ratio_raw|
           EventBonus.new(student_id.to_s, ratio_raw.to_f / 10000)
         end || []
       end
