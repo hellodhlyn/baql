@@ -27,10 +27,10 @@ RSpec.describe Event, type: :model do
 
   describe "#stages" do
     before do
-      stub_request(:get, "https://raw.githubusercontent.com/SchaleDB/SchaleDB/main/data/kr/stages.min.json")
-        .to_return(body: File.read("spec/_fixtures/stages.min.json"))
+      stub_request(:get, "https://schaledb.com/data/kr/events.min.json")
+        .to_return(body: File.read("spec/_fixtures/events.min.json"))
 
-      stub_request(:get, "https://raw.githubusercontent.com/SchaleDB/SchaleDB/main/data/kr/items.min.json")
+      stub_request(:get, "https://schaledb.com/data/kr/items.min.json")
         .to_return(body: File.read("spec/_fixtures/items.min.json"))
     end
 
@@ -52,7 +52,7 @@ RSpec.describe Event, type: :model do
         expect(subject.first.rewards.first.item).to be_a(Item)
           .and have_attributes(
             item_id: "80390",
-            name: "타겟 단서",
+            name: "타깃 단서",
             image_id: "item_icon_event_token_0_s36",
           )
       end

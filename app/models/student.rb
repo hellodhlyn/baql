@@ -20,8 +20,8 @@ class Student < ApplicationRecord
   end
 
   def self.sync!
-    SchaleDB::Data.students.each do |row|
-      student = Student.find_or_initialize_by(student_id: row["Id"])
+    SchaleDB::V1::Data.students.each do |student_id, row|
+      student = Student.find_or_initialize_by(student_id: student_id)
       student.update!(
         name:         row["Name"],
         school:       row["School"].downcase.gsub(/^etc$/, "others"),

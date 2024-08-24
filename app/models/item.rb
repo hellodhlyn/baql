@@ -6,19 +6,18 @@ class Item
   end
 
   def self.find_by_item_id(item_id)
-    raw_items = Rails.cache.fetch("data::items::all", expires_in: 1.hour) do
-      SchaleDB::Data.items
-    end
-
     Rails.cache.fetch("data::items::#{item_id}", expires_in: 1.minute) do
-      raw_item = raw_items.find { |item| item["Id"].to_s == item_id.to_s }
-      return nil if raw_item.nil?
+      raw_items = Rails.cache.fetch("data::items::all_v1", expires_in: 1.hour) do
+        SchaleDB::V1::Data.items
+      end
+      return nil unless raw_items.key?(item_id)
 
+      raw_item = raw_items[item_id]
       Item.new.tap do |item|
         item.item_id = raw_item["Id"].to_s
         item.name = raw_item["Name"]
         item.image_id = raw_item["Icon"]
-        item.event_bonuses = raw_item["EventBonus"]&.map do |student_id, ratio_raw|
+        item.event_bonuses = raw_item["EventBonus"]["Jp"]&.map do |student_id, ratio_raw|
           EventBonus.new(student_id.to_s, ratio_raw.to_f / 10000)
         end || []
       end

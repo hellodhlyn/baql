@@ -17,7 +17,7 @@ RSpec.describe Student, type: :model do
     subject { Student.sync! }
 
     before do
-      stub_request(:get, "https://raw.githubusercontent.com/SchaleDB/SchaleDB/main/data/kr/students.min.json")
+      stub_request(:get, "https://schaledb.com/data/kr/students.min.json")
         .to_return(body: File.read("spec/_fixtures/students.min.json"))
     end
 

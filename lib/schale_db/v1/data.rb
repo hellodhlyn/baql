@@ -1,15 +1,15 @@
 require "net/http"
 
-module SchaleDB
+module SchaleDB::V1
   class Data
-    HOST = "https://raw.githubusercontent.com/SchaleDB/SchaleDB/main"
+    HOST = "https://schaledb.com"
 
     def self.students
       get("data/kr/students.min.json")
     end
 
-    def self.stages
-      get("data/kr/stages.min.json")
+    def self.events
+      get("data/kr/events.min.json")
     end
 
     def self.items
@@ -20,7 +20,7 @@ module SchaleDB
 
     def self.get(path)
       address = "#{HOST}/#{path}"
-      Rails.logger.info("[SchaleDB::Data] GET #{address}")
+      Rails.logger.info("[SchaleDB::V1::Data] GET #{address}")
       uri = URI(address)
       JSON.parse(Net::HTTP.get(uri))
     end
