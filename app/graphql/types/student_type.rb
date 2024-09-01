@@ -15,5 +15,6 @@ module Types
     field :equipments, [String], null: false
     field :released, Boolean, null: false
     field :order, Int, null: false
+    field :schale_db_id, String, null: false
   end
 end

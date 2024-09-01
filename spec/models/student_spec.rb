@@ -35,6 +35,7 @@ RSpec.describe Student, type: :model do
           released:     true,
           equipments:   ["shoes", "hairpin", "necklace"],
           order:        19,
+          schale_db_id: "kayoko",
         )
       end
     end

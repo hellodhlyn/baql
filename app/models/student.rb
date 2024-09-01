@@ -32,6 +32,7 @@ class Student < ApplicationRecord
         released:     row["IsReleased"][1],
         equipments:   row["Equipment"].map(&:downcase).join(","),
         order:        row["DefaultOrder"],
+        schale_db_id: row["PathName"],
       )
 
       Rails.logger.info("Student #{student.name}(#{student.student_id}) has been updated") if student.saved_change_to_released?

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_08_17_141429) do
+ActiveRecord::Schema[7.2].define(version: 2024_09_01_155749) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -64,7 +64,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_08_17_141429) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "multiclass_id"
+    t.string "schale_db_id"
     t.index ["student_id"], name: "index_students_on_student_id", unique: true
   end
-
 end

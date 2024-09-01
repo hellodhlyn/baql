@@ -7,6 +7,7 @@ module Types
     field :events, resolver: Queries::EventsQuery
     field :raid, resolver: Queries::RaidQuery
     field :raids, resolver: Queries::RaidsQuery
+    field :student, resolver: Queries::StudentQuery
     field :students, resolver: Queries::StudentsQuery
   end
 end
