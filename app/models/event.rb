@@ -35,7 +35,7 @@ class Event < ApplicationRecord
         rewards = stage["Rewards"]["Jp"].select do |reward|
           reward["Type"] == "Item" && (reward["Chance"].nil? || reward["Chance"] >= 1) && reward["RewardType"].nil?
         end.map do |reward|
-          item = items[reward["Id"]] ||= Item.find_by_item_id(reward["Id"].to_s)
+          item = items[reward["Id"]] ||= Item.find_by_item_id(reward["Id"].to_s, rerun_event: rerun)
           StageReward.new(item, reward["Amount"])
         end
         entry_ap = stage["EntryCost"]&.find { |item_id, _| item_id == 5 }&.last || nil

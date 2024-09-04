@@ -36,26 +36,37 @@ RSpec.describe Event, type: :model do
 
     subject { event.stages }
 
-    context "if event_index presents" do
-      let(:event) { FactoryBot.create(:event, event_index: 834) }
+    context "if event_index presents and the event is not rerun" do
+      let(:event) { FactoryBot.create(:event, event_index: 809) }
 
       it "should return an array of stages" do
         expect(subject).to all(be_a(Event::Stage))
-        expect(subject.size).to eq(16)
+        expect(subject.size).to eq(17)
         expect(subject.first).to have_attributes(
-          name: "1F 중앙 테라스",
+          name: "해돋이산 남쪽 길",
           difficulty: 1,
           index: "1",
         )
+      end
 
+      it "returns an array of rewards" do
         expect(subject.first.rewards).to all(be_a(Event::StageReward))
         expect(subject.first.rewards.size).to eq(3)
         expect(subject.first.rewards.first.item).to be_a(Item)
           .and have_attributes(
-            item_id: "80390",
-            name: "타깃 단서",
-            image_id: "item_icon_event_token_0_s36",
+            item_id: "80070",
+            name: "특제 신년 복주머니",
+            image_id: "item_icon_event_token_0_s11",
           )
+        expect(subject.first.rewards.first.item.event_bonuses.size).to eq(5)
+      end
+    end
+
+    context "if event_index presents and the event is rerun" do
+      let(:event) { FactoryBot.create(:event, event_index: 809, rerun: true) }
+
+      it "returns an array of rewards" do
+        expect(subject.first.rewards.first.item.event_bonuses.size).to eq(7)
       end
     end
 
