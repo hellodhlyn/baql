@@ -29,7 +29,7 @@ class Student < ApplicationRecord
         attack_type:  SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
         defense_type: SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
         role:         row["SquadType"] == "Main" ? "striker" : "special",
-        released:     row["IsReleased"][1],
+        released:     student.released || row["IsReleased"][1],
         equipments:   row["Equipment"].map(&:downcase).join(","),
         order:        row["DefaultOrder"],
         schale_db_id: row["PathName"],

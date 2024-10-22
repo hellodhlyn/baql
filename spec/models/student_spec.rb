@@ -47,5 +47,13 @@ RSpec.describe Student, type: :model do
         expect { subject }.to change { Student.find_by(student_id: "13005").released }.from(false).to(true)
       end
     end
+
+    context "when the student is marked as released" do
+      before { FactoryBot.create(:student, student_id: "10091", released: true) }
+
+      it "does not update the existing student data" do
+        expect { subject }.not_to change { Student.find_by(student_id: "10091").released }
+      end
+    end
   end
 end
