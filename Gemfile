@@ -3,7 +3,7 @@ source "https://rubygems.org"
 ruby "~> 3.3.4"
 
 # Rails
-gem "rails", "~> 7.2"
+gem "rails", "~> 8.0"
 gem "graphql"
 
 # Drivers
