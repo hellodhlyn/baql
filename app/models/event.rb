@@ -9,20 +9,31 @@ class Event < ApplicationRecord
 
   validates :type, inclusion: { in: EVENT_TYPES }
 
-  Pickup = Data.define(:type, :rerun, :student_id, :student_name) do |data|
-    def initialize(type:, rerun:, student_id: nil, student_name: nil)
-      super
-    end
-
-    def student = Student.find_by_student_id(student_id)
-    def student_name = student&.name || to_h[:student_name]
-  end
-
+  ### Video contents
   Video = Data.define(:title, :youtube, :start)
 
-  json_array_attr :pickups, Pickup
   json_array_attr :videos, Video, default: { start: nil }
 
+  ### Pickup students
+  Pickup = Data.define(:type, :rerun, :student, :fallback_student_name) do
+    def student_name = student&.name || fallback_student_name
+    def student_id   = student&.student_id
+  end
+
+  def pickups
+    Rails.cache.fetch("data::events::#{id}::pickups", expires_in: 1.hour) do
+      db_pickups = read_attribute(:pickups)
+      return [] if db_pickups.nil?
+
+      students = Student.where(student_id: db_pickups.map { |pickup| pickup["studentId"] }).index_by(&:student_id)
+      db_pickups.map do |pickup|
+        student = students[pickup["studentId"]]
+        Pickup.new(pickup["type"], pickup["rerun"], student, pickup["studentName"])
+      end
+    end
+  end
+
+  ### Event stages
   Stage = Data.define(:name, :difficulty, :index, :entry_ap, :rewards)
   StageReward = Data.define(:item, :amount)
 
