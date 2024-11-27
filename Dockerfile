@@ -39,7 +39,7 @@ FROM base
 
 # Install packages needed for deployment
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libvips libpq-dev && \
+    apt-get install --no-install-recommends -y curl libvips libpq-dev libjemalloc2 && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application
@@ -51,6 +51,9 @@ RUN useradd rails --create-home --shell /bin/bash && \
     mkdir -p log storage tmp && \
     chown -R rails:rails db log storage tmp
 USER rails:rails
+
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so.2" \
+    RUBY_YJIT_ENABLE="1"
 
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
