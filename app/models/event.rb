@@ -21,7 +21,7 @@ class Event < ApplicationRecord
   end
 
   def pickups
-    Rails.cache.fetch("data::events::#{id}::pickups", expires_in: 1.hour) do
+    Rails.cache.fetch("data::events::#{id}::pickups", expires_in: 10.minutes) do
       db_pickups = read_attribute(:pickups)
       return [] if db_pickups.nil?
 
@@ -38,12 +38,12 @@ class Event < ApplicationRecord
   StageReward = Data.define(:item, :amount)
 
   def stages
-    Rails.cache.fetch("data::events::#{id}::stages", expires_in: 1.hour) do
+    Rails.cache.fetch("data::events::#{id}::stages", expires_in: 10.minutes) do
       items = {}
 
       event_stages = SchaleDB::V1::Data.events["Stages"].select { |id, stage| stage["EventId"] == event_index }.values
       event_stages.map do |stage|
-        rewards = stage["Rewards"]["Jp"].select do |reward|
+        rewards = stage["Rewards"].select do |reward|
           reward["Type"] == "Item" && (reward["Chance"].nil? || reward["Chance"] >= 1) && reward["RewardType"].nil?
         end.map do |reward|
           item = items[reward["Id"]] ||= Item.find_by_item_id(reward["Id"].to_s, rerun_event: rerun)
