@@ -32,7 +32,6 @@ RSpec.describe Student, type: :model do
           attack_type:  "explosive",
           defense_type: "heavy",
           role:         "striker",
-          released:     true,
           equipments:   ["shoes", "hairpin", "necklace"],
           order:        19,
           schale_db_id: "kayoko",
@@ -41,19 +40,33 @@ RSpec.describe Student, type: :model do
     end
 
     context "when the student data already exists" do
-      before { FactoryBot.create(:student, released: false) }
+      before { FactoryBot.create(:student, schale_db_id: "cat_lover") }
 
       it "updates the existing student data" do
-        expect { subject }.to change { Student.find_by(student_id: "13005").released }.from(false).to(true)
+        expect { subject }.to change { Student.find_by(student_id: "13005").schale_db_id }
+          .from("cat_lover").to("kayoko")
       end
     end
+  end
 
-    context "when the student is marked as released" do
-      before { FactoryBot.create(:student, student_id: "10091", released: true) }
+  describe "#released" do
+    subject { student.released }
 
-      it "does not update the existing student data" do
-        expect { subject }.not_to change { Student.find_by(student_id: "10091").released }
-      end
+    let(:student) { FactoryBot.build(:student, release_at: release_at) }
+
+    context "when the release_at is nil" do
+      let(:release_at) { nil }
+      it { is_expected.to be_falsey }
+    end
+
+    context "when the release_at is in the past" do
+      let(:release_at) { 1.day.ago }
+      it { is_expected.to be_truthy }
+    end
+
+    context "when the release_at is in the future" do
+      let(:release_at) { 1.day.from_now }
+      it { is_expected.to be_falsey }
     end
   end
 end

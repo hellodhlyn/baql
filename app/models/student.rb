@@ -29,13 +29,12 @@ class Student < ApplicationRecord
         attack_type:  SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
         defense_type: SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
         role:         row["SquadType"] == "Main" ? "striker" : "special",
-        released:     student.released || row["IsReleased"][1],
         equipments:   row["Equipment"].map(&:downcase).join(","),
         order:        row["DefaultOrder"],
         schale_db_id: row["PathName"],
       )
 
-      Rails.logger.info("Student #{student.name}(#{student.student_id}) has been updated") if student.saved_change_to_released?
+      Rails.logger.info("Student #{student.name}(#{student.student_id}) has been updated") if student.saved_changes?
     end
 
     nil
@@ -45,6 +44,10 @@ class Student < ApplicationRecord
     Rails.cache.fetch(cache_key(student_id), expires_in: 1.minute) do
       self.find_by(student_id: student_id)
     end
+  end
+
+  def released
+    self.release_at.present? && self.release_at < Time.zone.now
   end
 
   def equipments

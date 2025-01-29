@@ -8,7 +8,7 @@ FactoryBot.define do
     defense_type { "heavy" }
     role { "striker" }
     equipments { ["shoes", "hairpin", "necklace"] }
-    released { true }
+    release_at { nil }
     order { 19 }
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2024_09_01_155749) do
+ActiveRecord::Schema[8.0].define(version: 2025_01_29_054103) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -59,12 +59,12 @@ ActiveRecord::Schema[8.0].define(version: 2024_09_01_155749) do
     t.string "defense_type", null: false
     t.string "role", null: false
     t.string "equipments"
-    t.boolean "released", default: false, null: false
     t.bigint "order", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "multiclass_id"
     t.string "schale_db_id"
+    t.datetime "release_at"
     t.index ["student_id"], name: "index_students_on_student_id", unique: true
   end
 end
