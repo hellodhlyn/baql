@@ -3,6 +3,7 @@ module Types
     include Types::Base::Interface
 
     field :name, String, null: false
+    field :confirmed, Boolean, null: false
     field :since, GraphQL::Types::ISO8601DateTime, null: false
     field :until, GraphQL::Types::ISO8601DateTime, null: false
 
