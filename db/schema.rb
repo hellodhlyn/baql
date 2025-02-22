@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_01_29_054103) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_20_173711) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -25,7 +25,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_29_054103) do
     t.jsonb "videos"
     t.jsonb "pickups"
     t.jsonb "tips"
-    t.boolean "visible", default: false, null: false
+    t.boolean "confirmed", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "event_index"
@@ -43,7 +43,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_29_054103) do
     t.string "defense_type"
     t.datetime "since", null: false
     t.datetime "until", null: false
-    t.boolean "visible", default: false, null: false
+    t.boolean "confirmed", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["raid_id"], name: "index_raids_on_raid_id", unique: true

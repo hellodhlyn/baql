@@ -48,5 +48,6 @@ module Types
     field :videos, [VideoType], null: false
     field :pickups, [PickupType], null: false
     field :stages, [StageType], null: false
+    field :confirmed, Boolean, null: false
   end
 end

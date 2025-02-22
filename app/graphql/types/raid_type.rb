@@ -22,5 +22,6 @@ module Types
     field :terrain, TerrainEnum, null: false
     field :attack_type, Types::Enums::AttackType, null: false
     field :defense_type, Types::Enums::DefenseType, null: false
+    field :confirmed, Boolean, null: false
   end
 end
