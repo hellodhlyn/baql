@@ -14,6 +14,11 @@ Used by [mollulog.net](https://mollulog.net).
 
 ### Run Server
 
+Set environment variables.
+
+- `STATIC_BUCKET_NAME`
+- (Environment variables for AWS S3)
+
 ```bash
 docker compose up -d
 
