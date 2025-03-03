@@ -23,6 +23,7 @@ module Types
     field :attack_type, Types::Enums::AttackType, null: false
     field :defense_type, Types::Enums::DefenseType, null: false
 
+    field :rank_visible, Boolean, null: false
     field :ranks, [Types::RaidRankType], null: false do
       argument :rank_after, Integer, required: false, default_value: 0
       argument :first, Integer, required: false, default_value: 20
