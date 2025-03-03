@@ -46,6 +46,10 @@ class Student < ApplicationRecord
     end
   end
 
+  def self.multiclass_students
+    self.where("multiclass_id is not null")
+  end
+
   def released
     self.release_at.present? && self.release_at < Time.zone.now
   end
