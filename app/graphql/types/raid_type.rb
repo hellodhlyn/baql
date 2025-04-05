@@ -25,13 +25,22 @@ module Types
 
     field :rank_visible, Boolean, null: false
     field :ranks, [Types::RaidRankType], null: false do
-      argument :rank_after, Integer, required: false, default_value: 0
+      argument :rank_after, Integer, required: false
+      argument :rank_before, Integer, required: false
       argument :first, Integer, required: false, default_value: 20
-      argument :filter, [Types::RaidRankType::RaidRankFilterType], required: false
+      argument :filter, [Types::RaidRankType::RaidRankFilterType], required: false, deprecation_reason: "Use include_students and exclude_students instead"
+      argument :include_students, [Types::RaidRankType::RaidRankFilterType], required: false
+      argument :exclude_students, [Types::RaidRankType::RaidRankFilterType], required: false
     end
 
-    def ranks(rank_after: 0, first: 20, filter: nil)
-      ranks = object.ranks(rank_after: rank_after, first: first, filter: filter)
+    def ranks(rank_after: nil, rank_before: nil, first: 20, filter: nil, include_students: nil, exclude_students: nil)
+      ranks = object.ranks(
+        rank_after: rank_after,
+        rank_before: rank_before,
+        first: first,
+        include_students: (filter || include_students)&.map(&:to_h),
+        exclude_students: exclude_students&.map(&:to_h),
+      )
       ranks.map do |row|
         {
           rank: row[:rank],

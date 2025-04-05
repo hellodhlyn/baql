@@ -8,40 +8,67 @@ class Raid < ApplicationRecord
 
   validates :type, inclusion: { in: RAID_TYPES }
 
-  # @params [Hash] filter [{ student_id: String, tier: Int }]
-  def ranks(rank_after: 0, first: 20, filter: nil)
+  # @params [Hash] include_students [{ student_id: String, tier: Int }]
+  # @params [Hash] exclude_students [{ student_id: String, tier: Int }]
+  def ranks(rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
     return [] unless raid_index_jp.present? && rank_visible && type == "total_assault"
     first = 20 if first > 20
+    rank_after = 0 if rank_after.nil? && rank_before.nil?
 
     data = Rails.cache.fetch("data::raids::#{id}::ranks", expires_in: 1.month) do
       Statics::Raids::Rank.parties(raid_index_jp)
     end
 
-    multiclass_students_map = Student.multiclass_students.pluck(:student_id, :multiclass_id).to_h
-
-    data.each_with_object([]) do |row, filtered|
-      next if row[:rank] <= rank_after
-      break filtered if filtered.size >= first
-
-      if filter.nil?
-        filtered << row
+    if include_students.blank? && exclude_students.blank?
+      if rank_before.present?
+        last_index = data.find_index { |row| row[:rank] >= rank_before }
+        return [] if last_index.nil? || last_index == 0
+        start_index = [last_index - first, 0].max
+        return data.slice(start_index, last_index - start_index)
       else
-        # { "10000" => [8, 8], ... }
-        filter_tiers = filter.each_with_object({}) do |each, hash|
-          hash[each[:student_id]] ||= []
-          hash[each[:student_id]] << each[:tier]
-        end
-
-        slots = row[:parties].flatten.reject { |slot| slot[:student_id].nil? }
-        matching_slots = slots.count do |slot|
-          slot_student_id = slot[:student_id]
-          slot_student_id = multiclass_students_map[slot_student_id] if multiclass_students_map.key?(slot_student_id)
-          filter_tiers[slot_student_id].then do |tiers|
-            tiers.present? && (index = tiers.index { |tier| tier >= slot[:tier].to_i }).present? && tiers.delete_at(index)
-          end
-        end
-        filtered << row if slots.size - matching_slots == 0
+        first_index = data.find_index { |row| row[:rank] > rank_after }
+        return data.slice(first_index, first)
       end
     end
+
+    # Convert multiclass students to their main id
+    multiclass_students_map = Student.multiclass_students.pluck(:student_id, :multiclass_id).to_h
+    include_students&.map! do |student|
+      student[:student_id] = multiclass_students_map[student[:student_id]] || student[:student_id]
+      student
+    end
+    exclude_students&.map! do |student|
+      student[:student_id] = multiclass_students_map[student[:student_id]] || student[:student_id]
+      student
+    end
+
+    matched_rows = []
+    data.reverse! if rank_before.present?
+    data.each do |row|
+      next if rank_before.present? ? row[:rank] >= rank_before : row[:rank] <= rank_after
+
+      slots = row[:parties].flatten.map! do |slot|
+        slot[:student_id] = multiclass_students_map[slot[:student_id]] || slot[:student_id]
+        slot
+      end
+
+      if include_students.present?
+        # Check if all include_students are present in the row
+        next unless include_students.all? do |student|
+          slots.any? { |slot| slot[:student_id] == student[:student_id] && slot[:tier].to_i >= student[:tier] }
+        end
+      end
+      if exclude_students.present?
+        # Check if any exclude_students are present in the row
+        next if exclude_students.any? do |student|
+          slots.any? { |slot| slot[:student_id] == student[:student_id] && slot[:tier].to_i >= student[:tier] }
+        end
+      end
+
+      matched_rows << row
+      break matched_rows if matched_rows.size >= first
+    end
+
+    rank_before.present? ? matched_rows.reverse : matched_rows
   end
 end
