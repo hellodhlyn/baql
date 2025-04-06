@@ -1,7 +1,29 @@
 require "rails_helper"
 
 RSpec.describe Raid, type: :model do
-  describe "#ranks" do
+  describe "#defense_types" do
+    let(:raid) { FactoryBot.create(:raid, defense_types: [
+      { defense_type: "light", difficulty: nil },
+      { defense_type: "special", difficulty: nil },
+      { defense_type: "elastic", difficulty: nil },
+    ]) }
+
+    context "when called with old `defense_type` column" do
+      it "return the first defense type" do
+        expect(raid.defense_type).to eq("light")
+      end
+    end
+
+    context "when called with new `defense_types` column" do
+      it "returns the first defense type" do
+        expect(raid.defense_types).to be_an(Array)
+        expect(raid.defense_types.size).to eq(3)
+        expect(raid.defense_types.first.defense_type).to eq("light")
+      end
+    end
+  end
+
+  describe "#ranks (total_assault)" do
     let(:raid) { FactoryBot.create(:raid, type: "total_assault", raid_index_jp: 70, rank_visible: true) }
     let(:args) { {} }
 
@@ -136,7 +158,7 @@ RSpec.describe Raid, type: :model do
       context "case #1" do
         let(:args) do
           { exclude_students: [
-            { student_id: "10008", tier: 3 }, # 네루
+            { student_id: "10008", tier: 8 }, # 네루
           ] }
         end
 
@@ -174,6 +196,33 @@ RSpec.describe Raid, type: :model do
 
       it "returns an array of ranks with the given include_students" do
         expect(subject.size).to eq(1)
+      end
+    end
+  end
+
+  describe "#ranks (elimination)" do
+    let(:raid) { FactoryBot.create(:raid, type: "elimination", raid_index_jp: 70, rank_visible: true) }
+    let(:args) { {} }
+
+    before do
+      allow(Statics::Raids::Rank).to receive(:elimination_parties)
+        .with(raid.raid_index_jp, args[:defense_type])
+        .and_return(JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/raid_rank.json.gz"))).map(&:deep_symbolize_keys))
+    end
+
+    subject { raid.ranks(**args) }
+
+    context "when defense_type is not given" do
+      it "returns an empty array" do
+        expect(subject).to be_empty
+      end
+    end
+
+    context "when defense_type is given" do
+      let(:args) { { defense_type: "special" } }
+
+      it "returns an array of ranks with the given defense type" do
+        expect(subject.size).to eq(20)
       end
     end
   end
