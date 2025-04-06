@@ -6,7 +6,7 @@ RSpec.describe Raid, type: :model do
     let(:args) { {} }
 
     before do
-      allow(Statics::Raids::Rank).to receive(:parties)
+      allow(Statics::Raids::Rank).to receive(:total_assault_parties)
         .with(raid.raid_index_jp)
         .and_return(JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/raid_rank.json.gz"))).map(&:deep_symbolize_keys))
     end
@@ -161,7 +161,7 @@ RSpec.describe Raid, type: :model do
         FactoryBot.create(:student, student_id: "10000", multiclass_id: "10000")
         FactoryBot.create(:student, student_id: "10001", multiclass_id: "10000")
 
-        allow(Statics::Raids::Rank).to receive(:parties)
+        allow(Statics::Raids::Rank).to receive(:total_assault_parties)
           .with(raid.raid_index_jp)
           .and_return([{
             rank: 1,

@@ -3,20 +3,37 @@ class Raid < ApplicationRecord
 
   self.inheritance_column = :_type_disabled
 
-  RAID_TYPES = ["total_assault", "elimination", "unlimit"]
-  TERRAINS   = ["indoor", "outdoor", "street"]
+  RAID_TYPES   = ["total_assault", "elimination", "unlimit"]
+  TERRAINS     = ["indoor", "outdoor", "street"]
+  DIFFICULTIES = ["normal", "hard", "very_hard", "hardcore", "extreme", "insane", "torment", "lunatic"]
 
   validates :type, inclusion: { in: RAID_TYPES }
 
+  ### Defense types
+  DefenseType = Data.define(:defense_type, :difficulty)
+
+  json_array_attr :defense_types, DefenseType
+
+  # Old `defense_type` column is deprecated. Use this method for backward compatibility.
+  def defense_type
+    defense_types.first.defense_type
+  end
+
   # @params [Hash] include_students [{ student_id: String, tier: Int }]
   # @params [Hash] exclude_students [{ student_id: String, tier: Int }]
-  def ranks(rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
-    return [] unless raid_index_jp.present? && rank_visible && type == "total_assault"
+  def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
+    puts defense_types
+    return [] if type == "elimination" && (defense_type.blank? || defense_types.none? { |type| type.defense_type == defense_type })
+    return [] if raid_index_jp.blank? || !rank_visible || type == "unlimit"
     first = 20 if first > 20
-    rank_after = 0 if rank_after.nil? && rank_before.nil?
+    rank_after = 0 if rank_after.blank? && rank_before.blank?
 
-    data = Rails.cache.fetch("data::raids::#{id}::ranks", expires_in: 1.month) do
-      Statics::Raids::Rank.parties(raid_index_jp)
+    data = Rails.cache.fetch("data::raids::#{id}::#{defense_type || "total_assault"}::ranks", expires_in: 1.month) do
+      if type == "elimination"
+        Statics::Raids::Rank.elimination_parties(raid_index_jp, defense_type)
+      else
+        Statics::Raids::Rank.total_assault_parties(raid_index_jp)
+      end
     end
 
     if include_students.blank? && exclude_students.blank?
@@ -61,7 +78,7 @@ class Raid < ApplicationRecord
       if exclude_students.present?
         # Check if any exclude_students are present in the row
         next if exclude_students.any? do |student|
-          slots.any? { |slot| slot[:student_id] == student[:student_id] && slot[:tier].to_i >= student[:tier] }
+          slots.any? { |slot| slot[:student_id] == student[:student_id] && slot[:tier].to_i <= student[:tier] }
         end
       end
 

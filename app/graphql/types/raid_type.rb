@@ -15,16 +15,29 @@ module Types
       end
     end
 
+    class DifficultyEnum < Types::Base::Enum
+      Raid::DIFFICULTIES.each do |type|
+        value type, value: type
+      end
+    end
+
+    class DefenseTypeAndDifficulty < Types::Base::Object
+      field :defense_type, Types::Enums::DefenseType, null: false
+      field :difficulty, DifficultyEnum, null: true
+    end
+
     field :raid_id, String, null: false
     field :type, RaidTypeEnum, null: false
     field :name, String, null: false
     field :boss, String, null: false
     field :terrain, TerrainEnum, null: false
     field :attack_type, Types::Enums::AttackType, null: false
-    field :defense_type, Types::Enums::DefenseType, null: false
+    field :defense_type, Types::Enums::DefenseType, null: false, deprecation_reason: "Use defense_types instead"
+    field :defense_types, [DefenseTypeAndDifficulty], null: false
 
     field :rank_visible, Boolean, null: false
     field :ranks, [Types::RaidRankType], null: false do
+      argument :defense_type, Types::Enums::DefenseType, required: false
       argument :rank_after, Integer, required: false
       argument :rank_before, Integer, required: false
       argument :first, Integer, required: false, default_value: 20
@@ -33,8 +46,9 @@ module Types
       argument :exclude_students, [Types::RaidRankType::RaidRankFilterType], required: false
     end
 
-    def ranks(rank_after: nil, rank_before: nil, first: 20, filter: nil, include_students: nil, exclude_students: nil)
+    def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, filter: nil, include_students: nil, exclude_students: nil)
       ranks = object.ranks(
+        defense_type: defense_type,
         rank_after: rank_after,
         rank_before: rank_before,
         first: first,
