@@ -1,7 +1,7 @@
 require "rails_helper"
 
-RSpec.describe Queries::StudentsQuery, type: :query do
-  subject { Queries::StudentsQuery.new(object: nil, context: nil, field: nil) }
+RSpec.describe Queries::StudentsQuery, type: :graphql do
+  subject { Queries::StudentsQuery.new(object: nil, context: query_context, field: nil) }
 
   describe "#resolve" do
     before do
