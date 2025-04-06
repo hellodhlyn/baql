@@ -43,6 +43,7 @@ class Raid < ApplicationRecord
         return data.slice(start_index, last_index - start_index)
       else
         first_index = data.find_index { |row| row[:rank] > rank_after }
+        return [] if first_index.nil?
         return data.slice(first_index, first)
       end
     end
