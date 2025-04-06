@@ -12,6 +12,10 @@ module GraphQLHelpers
       context: { controller: controller }.merge(opts[:context] || {}),
     )
   end
+
+  def query_context
+    @query_context ||= GraphQL::Query.new(BaqlSchema, "{ __typename }").context
+  end
 end
 
 RSpec.configure do |config|
