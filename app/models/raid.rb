@@ -22,7 +22,6 @@ class Raid < ApplicationRecord
   # @params [Hash] include_students [{ student_id: String, tier: Int }]
   # @params [Hash] exclude_students [{ student_id: String, tier: Int }]
   def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
-    puts defense_types
     return [] if type == "elimination" && (defense_type.blank? || defense_types.none? { |type| type.defense_type == defense_type })
     return [] if raid_index_jp.blank? || !rank_visible || type == "unlimit"
     first = 20 if first > 20
