@@ -24,7 +24,6 @@ class Raid < ApplicationRecord
   def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
     return [] if type == "elimination" && (defense_type.blank? || defense_types.none? { |type| type.defense_type == defense_type })
     return [] if raid_index_jp.blank? || !rank_visible || type == "unlimit"
-    first = 20 if first > 20
     rank_after = 0 if rank_after.blank? && rank_before.blank?
 
     data = Rails.cache.fetch("data::raids::#{id}::#{defense_type || "total_assault"}::ranks", expires_in: 1.month) do

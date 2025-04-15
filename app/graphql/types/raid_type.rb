@@ -47,11 +47,12 @@ module Types
     end
 
     def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, filter: nil, include_students: nil, exclude_students: nil)
+      first_arg = first > 20 ? 20 : first
       ranks = object.ranks(
         defense_type: defense_type,
         rank_after: rank_after,
         rank_before: rank_before,
-        first: first,
+        first: first_arg,
         include_students: (filter || include_students)&.map(&:to_h),
         exclude_students: exclude_students&.map(&:to_h),
       )
