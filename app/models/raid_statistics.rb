@@ -1,27 +1,43 @@
 class RaidStatistics < ApplicationRecord
   belongs_to :raid
 
-  def self.sync!(student_id:)
-    student = Student.find_by(student_id: student_id)
-    return unless student&.released
+  def self.sync!(raid_id:)
+    raid = Raid.find_by(raid_id: raid_id)
+    return unless raid&.rank_visible?
 
-    raids = Raid.where("since >= ?", student.release_at).where(rank_visible: true)
-    raids.each do |raid|
-      next if RaidStatistics.exists?(student_id: student_id, raid: raid)
+    raid.defense_types.each do |defense_type|
+      ranks_data = raid.ranks(defense_type: defense_type.defense_type, first: 20000)
 
-      raid.defense_types.each do |defense_type|
-        # { 3 => 10, 4 => 20, ... }
-        counts_by_tier = raid.ranks(defense_type: defense_type.defense_type, first: 20000).map do |row|
-          row[:parties].flatten.select { |slot| slot[:student_id] == student_id }.map { |slot| slot[:tier] }.max
-        end.compact.tally
-        next if counts_by_tier.blank?
+      # { student_id => { tier => count } }
+      slots_counts = {}
+      assists_counts = {}
+      ranks_data.each do |row|
+        row[:parties].flatten.each do |slot|
+          student_id = slot[:student_id]
+          next if student_id.blank?
 
+          if slot[:is_assist]
+            assists_counts[student_id] ||= Hash.new(0)
+            assists_counts[student_id][slot[:tier]] += 1
+          else
+            slots_counts[student_id] ||= Hash.new(0)
+            slots_counts[student_id][slot[:tier]] += 1
+          end
+        end
+      end
+
+      # Transform the data and create records
+      (slots_counts.keys + assists_counts.keys).uniq.each do |student_id|
+        next if RaidStatistics.exists?(student_id: student_id, raid: raid, defense_type: defense_type.defense_type)
         RaidStatistics.create!(
-          student_id:     student_id,
-          raid:           raid,
-          defense_type:   defense_type.defense_type,
-          difficulty:     defense_type.difficulty,
-          counts_by_tier: counts_by_tier,
+          student_id: student_id,
+          raid: raid,
+          defense_type: defense_type.defense_type,
+          difficulty: defense_type.difficulty,
+          slots_count: slots_counts[student_id]&.values&.sum || 0,
+          slots_by_tier: slots_counts[student_id] || {},
+          assists_count: assists_counts[student_id]&.values&.sum || 0,
+          assists_by_tier: assists_counts[student_id] || {},
         )
       end
     end

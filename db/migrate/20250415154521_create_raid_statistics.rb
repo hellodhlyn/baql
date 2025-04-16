@@ -5,7 +5,10 @@ class CreateRaidStatistics < ActiveRecord::Migration[8.0]
       t.bigint :raid_id, null: false
       t.string :defense_type, null: false
       t.string :difficulty, null: false
-      t.jsonb :counts_by_tier, null: false
+      t.bigint :slots_count, null: false
+      t.jsonb :slots_by_tier, null: false
+      t.bigint :assists_count, null: false
+      t.jsonb :assists_by_tier, null: false
       t.timestamps
     end
 
