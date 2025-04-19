@@ -68,8 +68,10 @@ module Types
       argument :defense_type, Types::Enums::DefenseType, required: false
     end
 
-    def statistics(defense_type:)
-      RaidStatistics.where(raid: object, defense_type: defense_type).order(slots_count: :desc)
+    def statistics(defense_type: nil)
+      query = RaidStatistics.where(raid: object)
+      query = query.where(defense_type: defense_type) if defense_type.present?
+      query.order(slots_count: :desc)
     end
   end
 end
