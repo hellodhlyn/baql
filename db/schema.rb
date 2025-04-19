@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_05_180624) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_15_154521) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -31,6 +31,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_05_180624) do
     t.bigint "event_index"
     t.index ["event_id"], name: "index_events_on_event_id", unique: true
     t.index ["since"], name: "index_events_on_since"
+  end
+
+  create_table "raid_statistics", force: :cascade do |t|
+    t.string "student_id", null: false
+    t.bigint "raid_id", null: false
+    t.string "defense_type", null: false
+    t.string "difficulty", null: false
+    t.bigint "slots_count", null: false
+    t.jsonb "slots_by_tier", null: false
+    t.bigint "assists_count", null: false
+    t.jsonb "assists_by_tier", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["raid_id"], name: "index_raid_statistics_on_raid_id"
+    t.index ["student_id", "raid_id", "defense_type"], name: "idx_on_student_id_raid_id_defense_type_5cd2daaa82", unique: true
   end
 
   create_table "raids", force: :cascade do |t|

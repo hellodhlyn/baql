@@ -1,9 +1,14 @@
 # frozen_string_literal: true
 
 class ImagesController < ApplicationController
-  def student
+  def student_collection
     student_id = params[:id]
     send_webp(SchaleDB::V1::Images.student_collection(student_id))
+  end
+
+  def student_standing
+    student_id = params[:id]
+    send_webp(SchaleDB::V1::Images.student_standing(student_id))
   end
 
   def item

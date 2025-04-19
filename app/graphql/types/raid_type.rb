@@ -15,15 +15,9 @@ module Types
       end
     end
 
-    class DifficultyEnum < Types::Base::Enum
-      Raid::DIFFICULTIES.each do |type|
-        value type, value: type
-      end
-    end
-
     class DefenseTypeAndDifficulty < Types::Base::Object
       field :defense_type, Types::Enums::DefenseType, null: false
-      field :difficulty, DifficultyEnum, null: true
+      field :difficulty, Types::Enums::DifficultyType, null: true
     end
 
     field :raid_id, String, null: false
@@ -47,11 +41,12 @@ module Types
     end
 
     def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, filter: nil, include_students: nil, exclude_students: nil)
+      first_arg = first > 20 ? 20 : first
       ranks = object.ranks(
         defense_type: defense_type,
         rank_after: rank_after,
         rank_before: rank_before,
-        first: first,
+        first: first_arg,
         include_students: (filter || include_students)&.map(&:to_h),
         exclude_students: exclude_students&.map(&:to_h),
       )
@@ -67,6 +62,16 @@ module Types
           end
         }
       end
+    end
+
+    field :statistics, [Types::RaidStatisticsType], null: false do
+      argument :defense_type, Types::Enums::DefenseType, required: false
+    end
+
+    def statistics(defense_type: nil)
+      query = RaidStatistics.where(raid: object)
+      query = query.where(defense_type: defense_type) if defense_type.present?
+      query.order(slots_count: :desc)
     end
   end
 end

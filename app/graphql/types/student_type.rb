@@ -16,5 +16,15 @@ module Types
     field :released, Boolean, null: false
     field :order, Int, null: false
     field :schale_db_id, String, null: false
+
+    field :raid_statistics, [Types::RaidStatisticsType], null: false do
+      argument :raid_since, GraphQL::Types::ISO8601DateTime, required: false
+    end
+
+    def raid_statistics(raid_since: nil)
+      query = RaidStatistics.where(student_id: object.student_id).joins(:raid)
+      query = query.where({ raid: { since: raid_since... } }) if raid_since.present?
+      query.order(raid: { since: :asc })
+    end
   end
 end
