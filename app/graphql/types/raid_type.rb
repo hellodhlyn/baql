@@ -15,15 +15,9 @@ module Types
       end
     end
 
-    class DifficultyEnum < Types::Base::Enum
-      Raid::DIFFICULTIES.each do |type|
-        value type, value: type
-      end
-    end
-
     class DefenseTypeAndDifficulty < Types::Base::Object
       field :defense_type, Types::Enums::DefenseType, null: false
-      field :difficulty, DifficultyEnum, null: true
+      field :difficulty, Types::Enums::DifficultyType, null: true
     end
 
     field :raid_id, String, null: false
@@ -68,6 +62,14 @@ module Types
           end
         }
       end
+    end
+
+    field :statistics, [Types::RaidStatisticsType], null: false do
+      argument :defense_type, Types::Enums::DefenseType, required: false
+    end
+
+    def statistics(defense_type:)
+      RaidStatistics.where(raid: object, defense_type: defense_type).order(slots_count: :desc)
     end
   end
 end

@@ -6,6 +6,10 @@ module SchaleDB::V1
       get("images/student/collection/#{student_id}.webp")
     end
 
+    def self.student_standing(student_id)
+      get("images/student/portrait/#{student_id}.webp")
+    end
+
     def self.item_icon(item_id)
       get("images/item/icon/#{item_id}.webp")
     end

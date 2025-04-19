@@ -43,6 +43,10 @@ class RaidStatistics < ApplicationRecord
     end
   end
 
+  def student
+    @student ||= Student.find_by_student_id(student_id)
+  end
+
   def counts_by_tier
     super&.transform_keys(&:to_i)
   end
