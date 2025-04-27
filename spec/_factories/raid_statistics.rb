@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :raid_statistics do
     association :raid
-    student_id { "13005" }
+    student_uid { "13005" }
     defense_type { "special" }
     difficulty { "torment" }
     slots_count { 39 + 42 }

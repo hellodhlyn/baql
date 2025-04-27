@@ -3,13 +3,13 @@ require "rails_helper"
 RSpec.describe Student, type: :model do
   describe ".all_without_multiclass" do
     before do
-      FactoryBot.create(:student, student_id: "10098", multiclass_id: "10098")
-      FactoryBot.create(:student, student_id: "10099", multiclass_id: "10098")
+      FactoryBot.create(:student, uid: "10098", multiclass_uid: "10098")
+      FactoryBot.create(:student, uid: "10099", multiclass_uid: "10098")
     end
 
     it "returns all students except for multiclass students" do
-      expect(Student.all.pluck(:student_id)).to contain_exactly("10098", "10099")
-      expect(Student.all_without_multiclass.pluck(:student_id)).to contain_exactly("10098")
+      expect(Student.all.pluck(:uid)).to contain_exactly("10098", "10099")
+      expect(Student.all_without_multiclass.pluck(:uid)).to contain_exactly("10098")
     end
   end
 
@@ -25,7 +25,7 @@ RSpec.describe Student, type: :model do
       it "generates student data from the source URL" do
         subject
 
-        expect(Student.find_by(student_id: "13005")).to have_attributes(
+        expect(Student.find_by(uid: "13005")).to have_attributes(
           name:         "카요코",
           school:       "gehenna",
           initial_tier: 2,
@@ -43,7 +43,7 @@ RSpec.describe Student, type: :model do
       before { FactoryBot.create(:student, schale_db_id: "cat_lover") }
 
       it "updates the existing student data" do
-        expect { subject }.to change { Student.find_by(student_id: "13005").schale_db_id }
+        expect { subject }.to change { Student.find_by(uid: "13005").schale_db_id }
           .from("cat_lover").to("kayoko")
       end
     end

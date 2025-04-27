@@ -1,6 +1,6 @@
 module Types
   class ItemEventBonusType < Types::Base::Object
-    field :student_id, String, null: false
+    field :student_id, String, null: false, deprecation_reason: "[REMOVE IN v1] Use `student` instead"
     field :student, StudentType, null: false
     field :ratio, Float, null: false
   end

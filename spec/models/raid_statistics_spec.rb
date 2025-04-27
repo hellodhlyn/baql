@@ -2,9 +2,9 @@ require "rails_helper"
 
 RSpec.describe RaidStatistics, type: :model do
   describe ".sync!" do
-    let!(:student1) { FactoryBot.create(:student, student_id: "13005", release_at: 1.month.ago) }
-    let!(:student2) { FactoryBot.create(:student, student_id: "13006", release_at: 2.months.ago) }
-    let!(:unreleased_student) { FactoryBot.create(:student, student_id: "13007", release_at: nil) }
+    let!(:student1) { FactoryBot.create(:student, uid: "13005", release_at: 1.month.ago) }
+    let!(:student2) { FactoryBot.create(:student, uid: "13006", release_at: 2.months.ago) }
+    let!(:unreleased_student) { FactoryBot.create(:student, uid: "13007", release_at: nil) }
 
     let!(:raid) do
       FactoryBot.create(:raid,
@@ -27,9 +27,9 @@ RSpec.describe RaidStatistics, type: :model do
             score: 10000,
             parties: [
               [
-                { student_id: "13005", tier: rank <= 30 ? 8 : 3 },
-                { student_id: "13006", tier: 5, is_assist: rank % 2 == 0 },
-                { student_id: "13007", tier: rank <= 20 ? 7 : 4, is_assist: true }
+                { student_uid: "13005", tier: rank <= 30 ? 8 : 3 },
+                { student_uid: "13006", tier: 5, is_assist: rank % 2 == 0 },
+                { student_uid: "13007", tier: rank <= 20 ? 7 : 4, is_assist: true }
               ]
             ],
           }
@@ -42,19 +42,19 @@ RSpec.describe RaidStatistics, type: :model do
     context "when the raid is visible" do
       it "creates expected records" do
         expect { subject }.to change { RaidStatistics.count }.by(9)
-        expect(RaidStatistics.find_by(student_id: "13005", defense_type: "elastic")).to have_attributes(
+        expect(RaidStatistics.find_by(student_uid: "13005", defense_type: "elastic")).to have_attributes(
           slots_count: 39,
           slots_by_tier: { "3" => 9, "8" => 30 },
           assists_count: 0,
           assists_by_tier: {},
         )
-        expect(RaidStatistics.find_by(student_id: "13006", defense_type: "elastic")).to have_attributes(
+        expect(RaidStatistics.find_by(student_uid: "13006", defense_type: "elastic")).to have_attributes(
           slots_count: 20,
           slots_by_tier: { "5" => 20 },
           assists_count: 19,
           assists_by_tier: { "5" => 19 },
         )
-        expect(RaidStatistics.find_by(student_id: "13007", defense_type: "elastic")).to have_attributes(
+        expect(RaidStatistics.find_by(student_uid: "13007", defense_type: "elastic")).to have_attributes(
           slots_count: 0,
           slots_by_tier: {},
           assists_count: 39,

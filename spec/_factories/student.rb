@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :student do
-    student_id { "13005" }
+    uid { "13005" }
     name { "카요코" }
     school { "gehenna" }
     initial_tier { 2 }

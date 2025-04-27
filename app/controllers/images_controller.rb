@@ -2,13 +2,13 @@
 
 class ImagesController < ApplicationController
   def student_collection
-    student_id = params[:id]
-    send_webp(SchaleDB::V1::Images.student_collection(student_id))
+    uid = params[:uid]
+    send_webp(SchaleDB::V1::Images.student_collection(uid))
   end
 
   def student_standing
-    student_id = params[:id]
-    send_webp(SchaleDB::V1::Images.student_standing(student_id))
+    uid = params[:uid]
+    send_webp(SchaleDB::V1::Images.student_standing(uid))
   end
 
   def item

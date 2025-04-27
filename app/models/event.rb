@@ -17,7 +17,7 @@ class Event < ApplicationRecord
   ### Pickup students
   Pickup = Data.define(:type, :rerun, :student, :fallback_student_name) do
     def student_name = student&.name || fallback_student_name
-    def student_id   = student&.student_id
+    def student_uid  = student&.uid
   end
 
   def pickups
@@ -25,9 +25,9 @@ class Event < ApplicationRecord
       db_pickups = read_attribute(:pickups)
       return [] if db_pickups.nil?
 
-      students = Student.where(student_id: db_pickups.map { |pickup| pickup["studentId"] }).index_by(&:student_id)
+      students = Student.where(uid: db_pickups.map { |pickup| pickup["studentUid"] }).index_by(&:uid)
       db_pickups.map do |pickup|
-        student = students[pickup["studentId"]]
+        student = students[pickup["studentUid"]]
         Pickup.new(pickup["type"], pickup["rerun"], student, pickup["studentName"])
       end
     end
