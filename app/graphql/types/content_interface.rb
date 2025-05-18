@@ -2,6 +2,7 @@ module Types
   module ContentInterface
     include Types::Base::Interface
 
+    field :uid, String, null: false
     field :name, String, null: false
     field :confirmed, Boolean, null: false
     field :since, GraphQL::Types::ISO8601DateTime, null: false

@@ -1,4 +1,7 @@
 class Student < ApplicationRecord
+  # [FIXME v1] Rename `student_id` to `uid`
+  has_many :pickups, primary_key: :student_id, foreign_key: :student_uid
+
   after_save :flush_cache
 
   scope :all_without_multiclass, -> { where("multiclass_id is null or multiclass_id = student_id") }

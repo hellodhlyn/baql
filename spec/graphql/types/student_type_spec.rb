@@ -2,8 +2,8 @@ require "rails_helper"
 
 RSpec.describe Types::StudentType, type: :graphql do
   let(:student) { FactoryBot.create(:student) }
-  let(:raid1) { FactoryBot.create(:raid, raid_id: SecureRandom.uuid, since: 2.weeks.ago) }
-  let(:raid2) { FactoryBot.create(:raid, raid_id: SecureRandom.uuid, since: 4.weeks.ago) }
+  let(:raid1) { FactoryBot.create(:raid, uid: SecureRandom.uuid, since: 2.weeks.ago) }
+  let(:raid2) { FactoryBot.create(:raid, uid: SecureRandom.uuid, since: 4.weeks.ago) }
 
   describe "#raid_statistics" do
     query = <<~GRAPHQL
@@ -26,7 +26,7 @@ RSpec.describe Types::StudentType, type: :graphql do
     context "when no argument is provided" do
       it "returns the statistics sorted by since" do
         expect(subject["data"]["student"]["raidStatistics"].count).to eq(2)
-        expect(subject["data"]["student"]["raidStatistics"].map { |stat| stat["raid"]["raidId"] }).to eq([raid2.raid_id, raid1.raid_id])
+        expect(subject["data"]["student"]["raidStatistics"].map { |stat| stat["raid"]["raidId"] }).to eq([raid2.uid, raid1.uid])
       end
     end
 
@@ -35,7 +35,7 @@ RSpec.describe Types::StudentType, type: :graphql do
 
       it "returns the statistics sorted by since" do
         expect(subject["data"]["student"]["raidStatistics"].count).to eq(1)
-        expect(subject["data"]["student"]["raidStatistics"].map { |stat| stat["raid"]["raidId"] }).to eq([raid1.raid_id])
+        expect(subject["data"]["student"]["raidStatistics"].map { |stat| stat["raid"]["raidId"] }).to eq([raid1.uid])
       end
     end
   end

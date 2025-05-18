@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Types::RaidType, type: :graphql do
-  let(:raid) { FactoryBot.create(:raid, raid_id: SecureRandom.uuid) }
+  let(:raid) { FactoryBot.create(:raid, uid: SecureRandom.uuid) }
 
   describe "#statistics" do
     query = <<~GRAPHQL
@@ -15,7 +15,7 @@ RSpec.describe Types::RaidType, type: :graphql do
       }
     GRAPHQL
 
-    subject { execute_graphql(query, variables: { raidId: raid.raid_id, defenseType: "light" }) }
+    subject { execute_graphql(query, variables: { raidId: raid.uid, defenseType: "light" }) }
 
     context "when multiple defense types exist" do
       before do
