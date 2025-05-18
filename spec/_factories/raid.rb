@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :raid do
-    raid_id { "20250225-shirokuro" }
+    uid { "20250225-shirokuro" }
     name { "시로 & 쿠로" }
     type { "total_assault" }
     boss { "shirokuro" }

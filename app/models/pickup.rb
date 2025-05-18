@@ -1,8 +1,7 @@
 class Pickup < ApplicationRecord
   PICKUP_TYPES = ["usual", "limited", "given", "fes"].freeze
 
-  # [FIXME v1] Rename `event_id` to `uid`
-  belongs_to :event, primary_key: :event_id, foreign_key: :event_uid
+  belongs_to :event, primary_key: :uid, foreign_key: :event_uid
   # [FIXME v1] Rename `student_id` to `uid`
   belongs_to :student, primary_key: :student_id, foreign_key: :student_uid, optional: true
 

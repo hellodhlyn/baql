@@ -43,7 +43,11 @@ module Types
       end
     end
 
+    # [DEPRECATED v1] Use `uid` instead
     field :event_id, String, null: false
+    def event_id = object.uid
+
+    field :uid, String, null: false
     field :type, EventTypeEnum, null: false
     field :rerun, Boolean, null: false
     field :image_url, String, null: true

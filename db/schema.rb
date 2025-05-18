@@ -10,12 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_17_092209) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_17_094729) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "events", force: :cascade do |t|
-    t.string "event_id", null: false
+    t.string "uid", null: false
     t.string "name", null: false
     t.string "type", null: false
     t.boolean "rerun", null: false
@@ -23,14 +23,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_17_092209) do
     t.datetime "until", null: false
     t.string "image_url"
     t.jsonb "videos"
-    t.jsonb "pickups"
     t.jsonb "tips"
     t.boolean "confirmed", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "event_index"
-    t.index ["event_id"], name: "index_events_on_event_id", unique: true
     t.index ["since"], name: "index_events_on_since"
+    t.index ["uid"], name: "index_events_on_uid", unique: true
   end
 
   create_table "pickups", force: :cascade do |t|
@@ -63,7 +62,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_17_092209) do
   end
 
   create_table "raids", force: :cascade do |t|
-    t.string "raid_id", null: false
+    t.string "uid", null: false
     t.string "name", null: false
     t.string "boss", null: false
     t.string "type", null: false
@@ -78,8 +77,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_17_092209) do
     t.bigint "raid_index_jp"
     t.boolean "rank_visible", default: false, null: false
     t.jsonb "defense_types", default: []
-    t.index ["raid_id"], name: "index_raids_on_raid_id", unique: true
     t.index ["since"], name: "index_raids_on_since"
+    t.index ["uid"], name: "index_raids_on_uid", unique: true
   end
 
   create_table "students", force: :cascade do |t|

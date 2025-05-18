@@ -1,8 +1,8 @@
 class RaidStatistics < ApplicationRecord
   belongs_to :raid
 
-  def self.sync!(raid_id:)
-    raid = Raid.find_by(raid_id: raid_id)
+  def self.sync!(raid_uid:)
+    raid = Raid.find_by(uid: raid_uid)
     return unless raid&.rank_visible?
 
     raid.defense_types.each do |defense_type|

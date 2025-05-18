@@ -8,8 +8,7 @@ class Event < ApplicationRecord
 
   validates :type, inclusion: { in: EVENT_TYPES }
 
-  # [FIXME v1] Rename `event_id` to `uid`
-  has_many :pickups, primary_key: :event_id, foreign_key: :event_uid
+  has_many :pickups, primary_key: :uid, foreign_key: :event_uid
 
   ### Video contents
   Video = Data.define(:title, :youtube, :start)

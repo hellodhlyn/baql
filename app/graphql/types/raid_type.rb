@@ -20,7 +20,11 @@ module Types
       field :difficulty, Types::Enums::DifficultyType, null: true
     end
 
+    # [DEPRECATED v1] Use `uid` instead
     field :raid_id, String, null: false
+    def raid_id = object.uid
+
+    field :uid, String, null: false
     field :type, RaidTypeEnum, null: false
     field :name, String, null: false
     field :boss, String, null: false

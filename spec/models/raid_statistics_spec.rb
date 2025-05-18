@@ -37,7 +37,7 @@ RSpec.describe RaidStatistics, type: :model do
       )
     end
 
-    subject { RaidStatistics.sync!(raid_id: raid.raid_id) }
+    subject { RaidStatistics.sync!(raid_uid: raid.uid) }
 
     context "when the raid is visible" do
       it "creates expected records" do
