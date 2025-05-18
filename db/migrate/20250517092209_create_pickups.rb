@@ -14,19 +14,36 @@ class CreatePickups < ActiveRecord::Migration[8.0]
     add_index :pickups, :student_uid
     add_index :pickups, :event_uid
 
-    Event.all.each do |event|
-      event.read_attribute(:pickups)&.each do |pickup|
-        Pickup.create!(
-          student_uid: pickup["studentId"],
-          fallback_student_name: pickup["studentName"] || Student.find_by_student_id(pickup["studentId"])&.name,
-          event_uid: event.event_id,
-          pickup_type: pickup["type"],
-          since: event.since,
-          until: event.until,
-          rerun: pickup["rerun"],
-        )
-      end
-    end
+    execute <<-SQL
+      INSERT INTO pickups (
+        student_uid,
+        fallback_student_name,
+        event_uid,
+        pickup_type,
+        since,
+        until,
+        rerun,
+        created_at,
+        updated_at
+      )
+      SELECT
+        pickup->>'studentId' as student_uid,
+        COALESCE(
+          pickup->>'studentName',
+          (SELECT name FROM students WHERE student_id = pickup->>'studentId')
+        ) as fallback_student_name,
+        event_id as event_uid,
+        pickup->>'type' as pickup_type,
+        since,
+        until,
+        (pickup->>'rerun')::boolean as rerun,
+        NOW() as created_at,
+        NOW() as updated_at
+      FROM events,
+      jsonb_array_elements(pickups) as pickup
+      WHERE pickups IS NOT NULL
+      ORDER BY since ASC;
+    SQL
 
     remove_column :events, :pickups
   end
