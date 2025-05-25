@@ -1,6 +1,9 @@
 module Types
   class ItemEventBonusType < Types::Base::Object
-    field :student_id, String, null: false
+    # [DEPRECATED v1] Use `student.uid` instead
+    field :student_id, String, null: false, deprecation_reason: "Use `student.uid` instead"
+    def student_id = object.student_uid
+
     field :student, StudentType, null: false
     field :ratio, Float, null: false
   end

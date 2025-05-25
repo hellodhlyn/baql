@@ -180,8 +180,8 @@ RSpec.describe Raid, type: :model do
 
     context "when multiclass students are present" do
       before do
-        FactoryBot.create(:student, student_id: "10000", multiclass_id: "10000")
-        FactoryBot.create(:student, student_id: "10001", multiclass_id: "10000")
+        FactoryBot.create(:student, uid: "10000", multiclass_uid: "10000")
+        FactoryBot.create(:student, uid: "10001", multiclass_uid: "10000")
 
         allow(Statics::Raids::Rank).to receive(:total_assault_parties)
           .with(raid.raid_index_jp)

@@ -8,7 +8,7 @@ RSpec.describe Event, type: :model do
       FactoryBot.create(:pickup, event: event, student_uid: "10089")
       FactoryBot.create(:pickup, event: event, fallback_student_name: "카요코(드레스)")
 
-      FactoryBot.create(:student, student_id: "10089", name: "아루(드레스)")
+      FactoryBot.create(:student, uid: "10089", name: "아루(드레스)")
     end
 
     subject { event.pickups }

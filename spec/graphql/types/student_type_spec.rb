@@ -16,11 +16,11 @@ RSpec.describe Types::StudentType, type: :graphql do
       }
     GRAPHQL
 
-    subject { execute_graphql(query, variables: { studentId: student.student_id }) }
+    subject { execute_graphql(query, variables: { studentId: student.uid }) }
 
     before do
-      FactoryBot.create(:raid_statistics, student_id: student.student_id, raid: raid1)
-      FactoryBot.create(:raid_statistics, student_id: student.student_id, raid: raid2)
+      FactoryBot.create(:raid_statistics, student_uid: student.uid, raid: raid1)
+      FactoryBot.create(:raid_statistics, student_uid: student.uid, raid: raid2)
     end
 
     context "when no argument is provided" do
@@ -31,7 +31,7 @@ RSpec.describe Types::StudentType, type: :graphql do
     end
 
     context "when the raid_since argument is provided" do
-      subject { execute_graphql(query, variables: { studentId: student.student_id, raidSince: 3.weeks.ago.iso8601 }) }
+      subject { execute_graphql(query, variables: { studentId: student.uid, raidSince: 3.weeks.ago.iso8601 }) }
 
       it "returns the statistics sorted by since" do
         expect(subject["data"]["student"]["raidStatistics"].count).to eq(1)

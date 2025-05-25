@@ -32,9 +32,9 @@ RSpec.describe Types::RaidType, type: :graphql do
 
     context "when multiple students exist" do
       before do
-        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", student_id: "10001", slots_count: 100)
-        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", student_id: "10002", slots_count: 300)
-        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", student_id: "10003", slots_count: 200)
+        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", slots_count: 100)
+        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", slots_count: 300)
+        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", slots_count: 200)
       end
 
       it "sorted by slots_count" do

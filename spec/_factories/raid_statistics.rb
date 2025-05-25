@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :raid_statistics do
     association :raid
-    student_id { "13005" }
+    student { FactoryBot.create(:student, uid: (10000...30000).to_a.sample.to_s) }
     defense_type { "special" }
     difficulty { "torment" }
     slots_count { 39 + 42 }

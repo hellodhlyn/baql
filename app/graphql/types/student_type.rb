@@ -5,7 +5,11 @@ module Types
       value "special", value: "special"
     end
 
+    # [DEPRECATED v1] Use `uid` instead
     field :student_id, String, null: false
+    def student_id = object.uid
+
+    field :uid, String, null: false
     field :name, String, null: false
     field :school, String, null: false
     field :initial_tier, Int, null: false
@@ -22,7 +26,7 @@ module Types
     end
 
     def raid_statistics(raid_since: nil)
-      query = RaidStatistics.where(student_id: object.student_id).joins(:raid)
+      query = RaidStatistics.where(student_uid: object.uid).joins(:raid)
       query = query.where({ raid: { since: raid_since... } }) if raid_since.present?
       query.order(raid: { since: :asc })
     end

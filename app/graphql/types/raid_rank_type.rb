@@ -3,7 +3,9 @@ module Types
     implements GraphQL::Types::Relay::Node
 
     class RaidRankFilterType < Types::Base::InputObject
-      argument :student_id, String, required: true
+      # [DEPRECATED v1] Use `uid` instead
+      argument :student_id, String, required: false
+      argument :uid, String, required: false
       argument :tier, Integer, required: true
     end
 
@@ -16,7 +18,9 @@ module Types
         field :is_assist, Boolean, null: true
 
         def student
-          object[:student_id].present? ? Student.find_by_student_id(object[:student_id]) : nil
+          # Keep backward compatibility for old data with `student_id`
+          student_uid = object[:student_uid] || object[:student_id]
+          student_uid.present? ? Student.find_by_uid(student_uid) : nil
         end
       end
 

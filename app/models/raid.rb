@@ -19,8 +19,8 @@ class Raid < ApplicationRecord
     defense_types.first.defense_type
   end
 
-  # @params [Hash] include_students [{ student_id: String, tier: Int }]
-  # @params [Hash] exclude_students [{ student_id: String, tier: Int }]
+  # @params [Hash] include_students [{ uid: String, tier: Int }]
+  # @params [Hash] exclude_students [{ uid: String, tier: Int }]
   def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
     return [] if type == "elimination" && (defense_type.blank? || defense_types.none? { |type| type.defense_type == defense_type })
     return [] if raid_index_jp.blank? || !rank_visible || type == "unlimit"
@@ -48,14 +48,18 @@ class Raid < ApplicationRecord
     end
 
     # Convert multiclass students to their main id
-    multiclass_students_map = Student.multiclass_students.pluck(:student_id, :multiclass_id).to_h
-    include_students&.map! do |student|
-      student[:student_id] = multiclass_students_map[student[:student_id]] || student[:student_id]
-      student
+    multiclass_students_map = Student.multiclass_students.pluck(:uid, :multiclass_uid).to_h
+    include_students&.map! do |filter|
+      # [DEPRECATED v1] Use `uid` instead
+      student_uid = filter[:uid] || filter[:student_id]
+      filter[:uid] = multiclass_students_map[student_uid] || student_uid
+      filter
     end
-    exclude_students&.map! do |student|
-      student[:student_id] = multiclass_students_map[student[:student_id]] || student[:student_id]
-      student
+    exclude_students&.map! do |filter|
+      # [DEPRECATED v1] Use `uid` instead
+      student_uid = filter[:uid] || filter[:student_id]
+      filter[:uid] = multiclass_students_map[student_uid] || student_uid
+      filter
     end
 
     matched_rows = []
@@ -64,20 +68,22 @@ class Raid < ApplicationRecord
       next if rank_before.present? ? row[:rank] >= rank_before : row[:rank] <= rank_after
 
       slots = row[:parties].flatten.map! do |slot|
-        slot[:student_id] = multiclass_students_map[slot[:student_id]] || slot[:student_id]
+        # Keep backward compatibility for old data with `student_id`
+        student_uid = slot[:student_uid] || slot[:student_id]
+        slot[:student_uid] = multiclass_students_map[student_uid] || student_uid
         slot
       end
 
       if include_students.present?
         # Check if all include_students are present in the row
-        next unless include_students.all? do |student|
-          slots.any? { |slot| slot[:student_id] == student[:student_id] && slot[:tier].to_i >= student[:tier] }
+        next unless include_students.all? do |filter|
+          slots.any? { |slot| slot[:student_uid] == filter[:uid] && slot[:tier].to_i >= filter[:tier] }
         end
       end
       if exclude_students.present?
         # Check if any exclude_students are present in the row
-        next if exclude_students.any? do |student|
-          slots.any? { |slot| slot[:student_id] == student[:student_id] && slot[:tier].to_i <= student[:tier] }
+        next if exclude_students.any? do |filter|
+          slots.any? { |slot| slot[:student_uid] == filter[:uid] && slot[:tier].to_i <= filter[:tier] }
         end
       end
 
