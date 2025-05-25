@@ -3,7 +3,7 @@ module Queries
     type Types::StudentType, null: false
 
     # [DEPRECATED v1] Use `uid` instead
-    argument :student_id, String, required: true
+    argument :student_id, String, required: false
     argument :uid, String, required: false
 
     def resolve(student_id: nil, uid: nil)
