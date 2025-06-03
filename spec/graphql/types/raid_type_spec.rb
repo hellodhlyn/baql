@@ -5,8 +5,8 @@ RSpec.describe Types::RaidType, type: :graphql do
 
   describe "#statistics" do
     query = <<~GRAPHQL
-      query($raidId: String!, $defenseType: Defense!) {
-        raid(raidId: $raidId) {
+      query($uid: String!, $defenseType: Defense!) {
+        raid(uid: $uid) {
           statistics(defenseType: $defenseType) {
             defenseType
             slotsCount
@@ -15,7 +15,7 @@ RSpec.describe Types::RaidType, type: :graphql do
       }
     GRAPHQL
 
-    subject { execute_graphql(query, variables: { raidId: raid.uid, defenseType: "light" }) }
+    subject { execute_graphql(query, variables: { uid: raid.uid, defenseType: "light" }) }
 
     context "when multiple defense types exist" do
       before do

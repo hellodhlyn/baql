@@ -3,9 +3,7 @@ module Types
     implements GraphQL::Types::Relay::Node
 
     class RaidRankFilterType < Types::Base::InputObject
-      # [DEPRECATED v1] Use `uid` instead
-      argument :student_id, String, required: false
-      argument :uid, String, required: false
+      argument :uid, String, required: true
       argument :tier, Integer, required: true
     end
 

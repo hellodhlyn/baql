@@ -72,7 +72,7 @@ RSpec.describe Raid, type: :model do
       context "case #1" do
         let(:args) do
           { include_students: [
-            { student_id: "10008", tier: 3 }, # 네루
+            { uid: "10008", tier: 3 }, # 네루
           ] }
         end
 
@@ -86,8 +86,8 @@ RSpec.describe Raid, type: :model do
       context "case #3" do
         let(:args) do
           { include_students: [
-            { student_id: "10008", tier: 3 }, # 네루
-            { student_id: "20038", tier: 7 }, # 토모에(치파오)
+            { uid: "10008", tier: 3 }, # 네루
+            { uid: "20038", tier: 7 }, # 토모에(치파오)
           ] }
         end
 
@@ -101,7 +101,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and first is given" do
       let(:args) do
-        { include_students: [{ student_id: "10008", tier: 3 }], first: 5 }
+        { include_students: [{ uid: "10008", tier: 3 }], first: 5 }
       end
 
       it "returns an array of ranks with the given count" do
@@ -112,7 +112,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_after is given" do
         let(:args) do
-        { include_students: [{ student_id: "10008", tier: 3 }], rank_after: 4 }
+        { include_students: [{ uid: "10008", tier: 3 }], rank_after: 4 }
       end
 
       it "returns an array of ranks after the given rank (exclusive)" do
@@ -123,7 +123,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_before is given" do
       let(:args) do
-        { include_students: [{ student_id: "10008", tier: 3 }], rank_before: 16 }
+        { include_students: [{ uid: "10008", tier: 3 }], rank_before: 16 }
       end
 
       it "returns an array of ranks before the given rank (exclusive)" do
@@ -134,7 +134,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_after and first is given" do
       let(:args) do
-        { include_students: [{ student_id: "10008", tier: 3 }], rank_after: 4, first: 3 }
+        { include_students: [{ uid: "10008", tier: 3 }], rank_after: 4, first: 3 }
       end
 
       it "returns an array of ranks after the given rank (exclusive)" do
@@ -145,7 +145,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_before and first is given" do
       let(:args) do
-        { include_students: [{ student_id: "10008", tier: 3 }], rank_before: 16, first: 3 }
+        { include_students: [{ uid: "10008", tier: 3 }], rank_before: 16, first: 3 }
       end
 
       it "returns an array of ranks before the given rank (exclusive)" do
@@ -158,7 +158,7 @@ RSpec.describe Raid, type: :model do
       context "case #1" do
         let(:args) do
           { exclude_students: [
-            { student_id: "10008", tier: 8 }, # 네루
+            { uid: "10008", tier: 8 }, # 네루
           ] }
         end
 
@@ -188,11 +188,11 @@ RSpec.describe Raid, type: :model do
           .and_return([{
             rank: 1,
             score: 39,
-            parties: [[{ student_id: "10001", tier: 8 }]],
+            parties: [[{ student_uid: "10001", tier: 8 }]],
           }])
       end
 
-      let(:args) { { include_students: [{ student_id: "10000", tier: 8 }] } }
+      let(:args) { { include_students: [{ uid: "10000", tier: 8 }] } }
 
       it "returns an array of ranks with the given include_students" do
         expect(subject.size).to eq(1)

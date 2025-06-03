@@ -10,7 +10,7 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
     end
 
     it "returns a student" do
-      results = subject.resolve(student_id: "10098")
+      results = subject.resolve(uid: "10098")
       expect(results.uid).to eq("10098")
     end
   end

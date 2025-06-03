@@ -50,14 +50,12 @@ class Raid < ApplicationRecord
     # Convert multiclass students to their main id
     multiclass_students_map = Student.multiclass_students.pluck(:uid, :multiclass_uid).to_h
     include_students&.map! do |filter|
-      # [DEPRECATED v1] Use `uid` instead
-      student_uid = filter[:uid] || filter[:student_id]
+      student_uid = filter[:uid]
       filter[:uid] = multiclass_students_map[student_uid] || student_uid
       filter
     end
     exclude_students&.map! do |filter|
-      # [DEPRECATED v1] Use `uid` instead
-      student_uid = filter[:uid] || filter[:student_id]
+      student_uid = filter[:uid]
       filter[:uid] = multiclass_students_map[student_uid] || student_uid
       filter
     end
