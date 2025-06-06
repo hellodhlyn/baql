@@ -8,7 +8,7 @@ module Queries
     argument :uids, [String], required: false
 
     def resolve(until_after: nil, since_before: nil, uids: nil)
-      results = Event.order(since: :asc, until: :asc)
+      results = Event.includes(:pickups, pickups: :student).order(since: :asc, until: :asc)
       results = results.where("until >= ?", until_after) if until_after.present?
       results = results.where("since < ?", since_before) if since_before.present?
       results = results.where(uid: uids) if uids.present?
