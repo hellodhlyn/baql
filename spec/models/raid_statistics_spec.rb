@@ -2,9 +2,9 @@ require "rails_helper"
 
 RSpec.describe RaidStatistics, type: :model do
   describe ".sync!" do
-    let!(:student1) { FactoryBot.create(:student, student_id: "13005", release_at: 1.month.ago) }
-    let!(:student2) { FactoryBot.create(:student, student_id: "13006", release_at: 2.months.ago) }
-    let!(:unreleased_student) { FactoryBot.create(:student, student_id: "13007", release_at: nil) }
+    let!(:student1) { FactoryBot.create(:student, uid: "13005", release_at: 1.month.ago) }
+    let!(:student2) { FactoryBot.create(:student, uid: "13006", release_at: 2.months.ago) }
+    let!(:unreleased_student) { FactoryBot.create(:student, uid: "13007", release_at: nil) }
 
     let!(:raid) do
       FactoryBot.create(:raid,
@@ -37,24 +37,24 @@ RSpec.describe RaidStatistics, type: :model do
       )
     end
 
-    subject { RaidStatistics.sync!(raid_id: raid.raid_id) }
+    subject { RaidStatistics.sync!(raid_uid: raid.uid) }
 
     context "when the raid is visible" do
       it "creates expected records" do
         expect { subject }.to change { RaidStatistics.count }.by(9)
-        expect(RaidStatistics.find_by(student_id: "13005", defense_type: "elastic")).to have_attributes(
+        expect(RaidStatistics.find_by(student_uid: "13005", defense_type: "elastic")).to have_attributes(
           slots_count: 39,
           slots_by_tier: { "3" => 9, "8" => 30 },
           assists_count: 0,
           assists_by_tier: {},
         )
-        expect(RaidStatistics.find_by(student_id: "13006", defense_type: "elastic")).to have_attributes(
+        expect(RaidStatistics.find_by(student_uid: "13006", defense_type: "elastic")).to have_attributes(
           slots_count: 20,
           slots_by_tier: { "5" => 20 },
           assists_count: 19,
           assists_by_tier: { "5" => 19 },
         )
-        expect(RaidStatistics.find_by(student_id: "13007", defense_type: "elastic")).to have_attributes(
+        expect(RaidStatistics.find_by(student_uid: "13007", defense_type: "elastic")).to have_attributes(
           slots_count: 0,
           slots_by_tier: {},
           assists_count: 39,

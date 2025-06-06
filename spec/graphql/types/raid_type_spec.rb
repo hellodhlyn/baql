@@ -1,12 +1,12 @@
 require "rails_helper"
 
 RSpec.describe Types::RaidType, type: :graphql do
-  let(:raid) { FactoryBot.create(:raid, raid_id: SecureRandom.uuid) }
+  let(:raid) { FactoryBot.create(:raid, uid: SecureRandom.uuid) }
 
   describe "#statistics" do
     query = <<~GRAPHQL
-      query($raidId: String!, $defenseType: Defense!) {
-        raid(raidId: $raidId) {
+      query($uid: String!, $defenseType: Defense!) {
+        raid(uid: $uid) {
           statistics(defenseType: $defenseType) {
             defenseType
             slotsCount
@@ -15,7 +15,7 @@ RSpec.describe Types::RaidType, type: :graphql do
       }
     GRAPHQL
 
-    subject { execute_graphql(query, variables: { raidId: raid.raid_id, defenseType: "light" }) }
+    subject { execute_graphql(query, variables: { uid: raid.uid, defenseType: "light" }) }
 
     context "when multiple defense types exist" do
       before do
@@ -32,9 +32,9 @@ RSpec.describe Types::RaidType, type: :graphql do
 
     context "when multiple students exist" do
       before do
-        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", student_id: "10001", slots_count: 100)
-        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", student_id: "10002", slots_count: 300)
-        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", student_id: "10003", slots_count: 200)
+        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", slots_count: 100)
+        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", slots_count: 300)
+        FactoryBot.create(:raid_statistics, raid: raid, defense_type: "light", slots_count: 200)
       end
 
       it "sorted by slots_count" do

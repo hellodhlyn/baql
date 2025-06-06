@@ -2,22 +2,19 @@ require "rails_helper"
 
 RSpec.describe Event, type: :model do
   describe "#pickups" do
-    let(:event) do
-      pickups = [
-        {"type":"usual","rerun":false,"studentId":"10089"},
-        {"type":"usual","rerun":false,"studentName":"카요코(드레스)"},
-      ]
-      FactoryBot.create(:event, pickups: pickups)
-    end
+    let(:event) { FactoryBot.create(:event) }
 
     before do
-      FactoryBot.create(:student, student_id: "10089", name: "아루(드레스)")
+      FactoryBot.create(:pickup, event: event, student_uid: "10089")
+      FactoryBot.create(:pickup, event: event, fallback_student_name: "카요코(드레스)")
+
+      FactoryBot.create(:student, uid: "10089", name: "아루(드레스)")
     end
 
     subject { event.pickups }
 
     it "returns an array of pickups" do
-      expect(subject).to all(be_a(Event::Pickup))
+      expect(subject).to all(be_a(Pickup))
     end
 
     it "returns names of students" do

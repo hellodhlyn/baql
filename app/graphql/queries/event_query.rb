@@ -2,10 +2,10 @@ module Queries
   class EventQuery < Queries::BaseQuery
     type Types::EventType, null: true
 
-    argument :event_id, String, required: true
+    argument :uid, String, required: true
 
-    def resolve(event_id:)
-      Event.find_by(event_id: event_id)
+    def resolve(uid: nil)
+      Event.find_by(uid: uid)
     end
   end
 end

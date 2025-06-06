@@ -1,7 +1,10 @@
 class Student < ApplicationRecord
+  has_many :pickups, primary_key: :uid, foreign_key: :student_uid
+  has_many :raid_statistics, primary_key: :uid, foreign_key: :student_uid
+
   after_save :flush_cache
 
-  scope :all_without_multiclass, -> { where("multiclass_id is null or multiclass_id = student_id") }
+  scope :all_without_multiclass, -> { where("multiclass_uid is null or multiclass_uid = uid") }
 
   class SchaleDBMap
     ATTACK_TYPES = {
@@ -20,8 +23,8 @@ class Student < ApplicationRecord
   end
 
   def self.sync!
-    SchaleDB::V1::Data.students.each do |student_id, row|
-      student = Student.find_or_initialize_by(student_id: student_id)
+    SchaleDB::V1::Data.students.each do |uid, row|
+      student = Student.find_or_initialize_by(uid: uid)
       student.update!(
         name:         row["Name"],
         school:       row["School"].downcase.gsub(/^etc$/, "others"),
@@ -34,20 +37,20 @@ class Student < ApplicationRecord
         schale_db_id: row["PathName"],
       )
 
-      Rails.logger.info("Student #{student.name}(#{student.student_id}) has been updated") if student.saved_changes?
+      Rails.logger.info("Student #{student.name}(#{student.uid}) has been updated") if student.saved_changes?
     end
 
     nil
   end
 
-  def self.find_by_student_id(student_id)
-    Rails.cache.fetch(cache_key(student_id), expires_in: 1.minute) do
-      self.find_by(student_id: student_id)
+  def self.find_by_uid(uid)
+    Rails.cache.fetch(cache_key(uid), expires_in: 1.minute) do
+      self.find_by(uid: uid)
     end
   end
 
   def self.multiclass_students
-    self.where("multiclass_id is not null")
+    self.where("multiclass_uid is not null")
   end
 
   def released
@@ -60,11 +63,11 @@ class Student < ApplicationRecord
 
   private
 
-  def self.cache_key(student_id)
-    "data::students::#{student_id}"
+  def self.cache_key(uid)
+    "students::#{uid}"
   end
 
   def flush_cache
-    Rails.cache.delete(self.class.cache_key(student_id))
+    Rails.cache.delete(self.class.cache_key(uid))
   end
 end

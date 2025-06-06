@@ -1,6 +1,5 @@
 module Types
   class ItemEventBonusType < Types::Base::Object
-    field :student_id, String, null: false
     field :student, StudentType, null: false
     field :ratio, Float, null: false
   end

@@ -20,7 +20,6 @@ module Types
       field :difficulty, Types::Enums::DifficultyType, null: true
     end
 
-    field :raid_id, String, null: false
     field :type, RaidTypeEnum, null: false
     field :name, String, null: false
     field :boss, String, null: false

@@ -5,33 +5,15 @@ class Event < ApplicationRecord
     "event", "mini_event", "guide_mission", "immortal_event",
     "pickup", "fes", "campaign", "exercise", "main_story", "collab",
   ].freeze
-  PICKUP_TYPES = ["usual", "limited", "given", "fes"].freeze
 
   validates :type, inclusion: { in: EVENT_TYPES }
+
+  has_many :pickups, primary_key: :uid, foreign_key: :event_uid
 
   ### Video contents
   Video = Data.define(:title, :youtube, :start)
 
   json_array_attr :videos, Video, default: { start: nil }
-
-  ### Pickup students
-  Pickup = Data.define(:type, :rerun, :student, :fallback_student_name) do
-    def student_name = student&.name || fallback_student_name
-    def student_id   = student&.student_id
-  end
-
-  def pickups
-    Rails.cache.fetch("data::events::#{id}::pickups", expires_in: 10.minutes) do
-      db_pickups = read_attribute(:pickups)
-      return [] if db_pickups.nil?
-
-      students = Student.where(student_id: db_pickups.map { |pickup| pickup["studentId"] }).index_by(&:student_id)
-      db_pickups.map do |pickup|
-        student = students[pickup["studentId"]]
-        Pickup.new(pickup["type"], pickup["rerun"], student, pickup["studentName"])
-      end
-    end
-  end
 
   ### Event stages
   Stage = Data.define(:name, :difficulty, :index, :entry_ap, :rewards)

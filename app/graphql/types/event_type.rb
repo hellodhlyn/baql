@@ -1,7 +1,7 @@
 module Types
   class PickupType < Types::Base::Object
     class PickupTypeEnum < Types::Base::Enum
-      ::Event::PICKUP_TYPES.each do |type|
+      ::Pickup::PICKUP_TYPES.each do |type|
         value type, value: type
       end
     end
@@ -10,6 +10,8 @@ module Types
     field :rerun, Boolean, null: false
     field :student, StudentType, null: true
     field :student_name, String, null: false
+    field :since, GraphQL::Types::ISO8601DateTime, null: false
+    field :until, GraphQL::Types::ISO8601DateTime, null: false
   end
 
   class VideoType < Types::Base::Object
@@ -41,7 +43,6 @@ module Types
       end
     end
 
-    field :event_id, String, null: false
     field :type, EventTypeEnum, null: false
     field :rerun, Boolean, null: false
     field :image_url, String, null: true

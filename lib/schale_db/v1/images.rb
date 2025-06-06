@@ -2,12 +2,12 @@ module SchaleDB::V1
   class Images
     HOST = "https://schaledb.com"
 
-    def self.student_collection(student_id)
-      get("images/student/collection/#{student_id}.webp")
+    def self.student_collection(student_uid)
+      get("images/student/collection/#{student_uid}.webp")
     end
 
-    def self.student_standing(student_id)
-      get("images/student/portrait/#{student_id}.webp")
+    def self.student_standing(student_uid)
+      get("images/student/portrait/#{student_uid}.webp")
     end
 
     def self.item_icon(item_id)
