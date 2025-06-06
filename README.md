@@ -1,8 +1,8 @@
 # BAQL
 
-> Blue Archive over GraphQL
+BAQL is a GraphQL interface for Blue Archive.  
+It serves various game data such as students, events, raids, etc.
 
-Use Blue Archive's game data via GraphQL.  
 Used by [mollulog.net](https://mollulog.net).
 
 ## Development
