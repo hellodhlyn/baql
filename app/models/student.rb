@@ -23,6 +23,8 @@ class Student < ApplicationRecord
   end
 
   def self.sync!
+    pickup_student_names = Pickup.where(student_uid: nil).pluck(:fallback_student_name)
+
     SchaleDB::V1::Data.students.each do |uid, row|
       student = Student.find_or_initialize_by(uid: uid)
       student.update!(
@@ -36,6 +38,11 @@ class Student < ApplicationRecord
         order:        row["DefaultOrder"],
         schale_db_id: row["PathName"],
       )
+
+      if pickup_student_names.include?(student.name)
+        pickup = Pickup.find_by(student_uid: nil, fallback_student_name: student.name)
+        pickup.update!(student_uid: student.uid) if pickup
+      end
 
       Rails.logger.info("Student #{student.name}(#{student.uid}) has been updated") if student.saved_changes?
     end
