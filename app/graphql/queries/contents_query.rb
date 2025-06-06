@@ -8,7 +8,8 @@ module Queries
 
     def resolve(until_after: nil, since_before: nil, content_ids: nil)
       [Event, Raid].map do |model|
-        result = model.order(since: :asc, until: :asc)
+        result = model == Event ? model.includes(:pickups, pickups: :student) : model
+        result = result.order(since: :asc, until: :asc)
         result = result.where("until >= ?", until_after) if until_after.present?
         result = result.where("since < ?", since_before) if since_before.present?
         if content_ids.present?
