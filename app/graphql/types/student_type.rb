@@ -15,7 +15,7 @@ module Types
     field :equipments, [String], null: false
     field :released, Boolean, null: false
     field :order, Int, null: false
-    field :schale_db_id, String, null: false
+    field :schale_db_id, String, null: true
 
     field :raid_statistics, [Types::RaidStatisticsType], null: false do
       argument :raid_since, GraphQL::Types::ISO8601DateTime, required: false
