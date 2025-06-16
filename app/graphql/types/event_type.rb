@@ -48,6 +48,8 @@ module Types
     field :image_url, String, null: true
     field :videos, [VideoType], null: false
     field :pickups, [PickupType], null: false
+    def pickups = object.pickups.order(:id)
+
     field :stages, [StageType], null: false
   end
 end
