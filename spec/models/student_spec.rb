@@ -19,6 +19,9 @@ RSpec.describe Student, type: :model do
     before do
       stub_request(:get, "https://schaledb.com/data/kr/students.min.json")
         .to_return(body: File.read("spec/_fixtures/students.min.json"))
+
+      allow(SchaleDB::V1::Images).to receive(:student_standing).and_return(nil)
+      allow(SchaleDB::V1::Images).to receive(:student_collection).and_return(nil)
     end
 
     context "when the student data does not exist" do

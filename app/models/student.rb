@@ -44,7 +44,10 @@ class Student < ApplicationRecord
         pickup.update!(student_uid: student.uid) if pickup
       end
 
-      Rails.logger.info("Student #{student.name}(#{student.uid}) has been updated") if student.saved_changes?
+      if student.saved_changes?
+        Rails.logger.info("Student #{student.name}(#{student.uid}) has been updated")
+        student.sync_images!
+      end
     end
 
     nil
@@ -68,6 +71,12 @@ class Student < ApplicationRecord
     super&.split(",") || []
   end
 
+  def sync_images!
+    sync_image!("assets/images/students/standing/#{uid}", SchaleDB::V1::Images.student_standing(uid))
+    sync_image!("assets/images/students/collection/#{uid}", SchaleDB::V1::Images.student_collection(uid))
+    nil
+  end
+
   private
 
   def self.cache_key(uid)
@@ -76,5 +85,17 @@ class Student < ApplicationRecord
 
   def flush_cache
     Rails.cache.delete(self.class.cache_key(uid))
+  end
+
+  def sync_image!(key, image_body)
+    return if image_body.blank?
+    Rails.logger.info("Syncing student image '#{key}' to S3")
+    s3_client.put_object(bucket: ENV["STATIC_BUCKET_NAME"], key: key, body: image_body)
+  rescue => e
+    Rails.logger.error("Failed to sync student image '#{key}' to S3: #{e.message}")
+  end
+
+  def s3_client
+    @s3_client ||= Aws::S3::Client.new
   end
 end
