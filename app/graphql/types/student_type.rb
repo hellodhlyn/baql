@@ -20,11 +20,15 @@ module Types
     field :raid_statistics, [Types::RaidStatisticsType], null: false do
       argument :raid_since, GraphQL::Types::ISO8601DateTime, required: false
     end
-
     def raid_statistics(raid_since: nil)
       query = RaidStatistics.where(student_uid: object.uid).joins(:raid)
       query = query.where({ raid: { since: raid_since... } }) if raid_since.present?
       query.order(raid: { since: :asc })
+    end
+
+    field :pickups, [Types::PickupType], null: false
+    def pickups
+      Pickup.where(student_uid: object.uid).order(since: :asc)
     end
   end
 end

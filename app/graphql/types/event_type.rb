@@ -1,19 +1,4 @@
 module Types
-  class PickupType < Types::Base::Object
-    class PickupTypeEnum < Types::Base::Enum
-      ::Pickup::PICKUP_TYPES.each do |type|
-        value type, value: type
-      end
-    end
-
-    field :type, PickupTypeEnum, null: false
-    field :rerun, Boolean, null: false
-    field :student, StudentType, null: true
-    field :student_name, String, null: false
-    field :since, GraphQL::Types::ISO8601DateTime, null: false
-    field :until, GraphQL::Types::ISO8601DateTime, null: false
-  end
-
   class VideoType < Types::Base::Object
     field :title, String, null: false
     field :youtube, String, null: false
@@ -47,8 +32,15 @@ module Types
     field :rerun, Boolean, null: false
     field :image_url, String, null: true
     field :videos, [VideoType], null: false
-    field :pickups, [PickupType], null: false
-    def pickups = object.pickups.order(:id)
+    field :pickups, [Types::PickupType], null: false
+    def pickups
+      # Use preloaded associations if available
+      if object.association(:pickups).loaded?
+        object.pickups.sort_by(&:id)
+      else
+        object.pickups.order(:id)
+      end
+    end
 
     field :stages, [StageType], null: false
   end

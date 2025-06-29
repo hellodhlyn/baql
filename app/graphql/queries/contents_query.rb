@@ -10,8 +10,8 @@ module Queries
       [Event, Raid].map do |model|
         result = model == Event ? model.includes(:pickups, pickups: :student) : model
         result = result.order(since: :asc, until: :asc)
-        result = result.where("until >= ?", until_after) if until_after.present?
-        result = result.where("since < ?", since_before) if since_before.present?
+        result = result.where(until: until_after..) if until_after.present?
+        result = result.where(since: ...since_before) if since_before.present?
         if content_ids.present?
           content_id_key = model.name.underscore + "_id"
           result = result.where(**{content_id_key => content_ids})
