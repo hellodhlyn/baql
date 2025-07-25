@@ -22,6 +22,6 @@ module Types
     field :student_name, String, null: false
     field :event, "Types::EventType", null: false
     field :since, GraphQL::Types::ISO8601DateTime, null: false
-    field :until, GraphQL::Types::ISO8601DateTime, null: false
+    field :until, GraphQL::Types::ISO8601DateTime, null: true
   end
 end
