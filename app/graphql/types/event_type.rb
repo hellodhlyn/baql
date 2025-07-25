@@ -30,6 +30,7 @@ module Types
 
     field :type, EventTypeEnum, null: false
     field :rerun, Boolean, null: false
+    field :endless, Boolean, null: false
     field :image_url, String, null: true
     field :videos, [VideoType], null: false
     field :pickups, [Types::PickupType], null: false

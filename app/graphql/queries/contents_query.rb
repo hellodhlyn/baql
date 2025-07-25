@@ -12,10 +12,7 @@ module Queries
         result = result.order(since: :asc, until: :asc)
         result = result.where(until: until_after..) if until_after.present?
         result = result.where(since: ...since_before) if since_before.present?
-        if content_ids.present?
-          content_id_key = model.name.underscore + "_id"
-          result = result.where(**{content_id_key => content_ids})
-        end
+        result = result.where(uid: content_ids) if content_ids.present?
         result
       end.flatten.sort_by do |content|
         [content.since, content.until]
