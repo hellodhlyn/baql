@@ -29,5 +29,7 @@ module Types
     field :rank, Integer, null: false
     field :score, Integer, null: false
     field :parties, [RaidRankPartyType], null: false
+
+    field :video, Types::RaidVideoType, null: true
   end
 end

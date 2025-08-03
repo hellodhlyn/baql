@@ -28,6 +28,7 @@ module Types
     field :defense_type, Types::Enums::DefenseType, null: false, deprecation_reason: "Use defense_types instead"
     field :defense_types, [DefenseTypeAndDifficulty], null: false
 
+    # ==== Ranks ====
     field :rank_visible, Boolean, null: false
     field :ranks, [Types::RaidRankType], null: false do
       argument :defense_type, Types::Enums::DefenseType, required: false
@@ -49,6 +50,11 @@ module Types
         include_students: (filter || include_students)&.map(&:to_h),
         exclude_students: exclude_students&.map(&:to_h),
       )
+
+      videos = RaidVideo.of(raid_uid: object.uid).where(score: ranks.map { |row| row[:score] }).to_h do |video|
+        [video.score, video]
+      end
+
       ranks.map do |row|
         {
           rank: row[:rank],
@@ -58,11 +64,13 @@ module Types
               party_index: party_index,
               slots: party,
             }
-          end
+          end,
+          video: videos[row[:score]],
         }
       end
     end
 
+    # ==== Statistics ====
     field :statistics, [Types::RaidStatisticsType], null: false do
       argument :defense_type, Types::Enums::DefenseType, required: false
     end
@@ -71,6 +79,28 @@ module Types
       query = RaidStatistics.includes(:student).where(raid: object)
       query = query.where(defense_type: defense_type) if defense_type.present?
       query.order(slots_count: :desc)
+    end
+
+    # ==== Videos ====
+    class VideoSortEnum < Types::Base::Enum
+      value "PUBLISHED_AT_DESC", value: "PUBLISHED_AT_DESC"
+      value "SCORE_DESC", value: "SCORE_DESC"
+    end
+
+    field :videos, Types::RaidVideoType.connection_type, null: false do
+      argument :sort, VideoSortEnum, required: false, default_value: "PUBLISHED_AT_DESC"
+    end
+
+    def videos(after: nil, first: 20, sort: "PUBLISHED_AT_DESC")
+      query = RaidVideo.of(raid_uid: object.uid)
+      case sort
+      when "SCORE_DESC"
+        query.order(score: :desc)
+      when "PUBLISHED_AT_DESC", nil
+        query.order(published_at: :desc)
+      else
+        query.order(published_at: :desc) # fallback to default
+      end
     end
   end
 end

@@ -17,6 +17,9 @@ gem "puma"
 gem "tzinfo-data"
 gem "bootsnap", require: false
 
+# External Services
+gem "google-apis-youtube_v3"
+
 # Monitoring
 gem "newrelic_rpm"
 
