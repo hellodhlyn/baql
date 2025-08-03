@@ -65,7 +65,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_03_153447) do
     t.bigint "score", null: false
     t.string "youtube_id", null: false
     t.string "thumbnail_url", null: false
-    t.string "published_at", null: false
+    t.datetime "published_at", null: false
     t.string "raid_type", null: false
     t.string "raid_boss", null: false
     t.string "raid_terrain", null: false

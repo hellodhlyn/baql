@@ -36,19 +36,21 @@ class RaidVideo < ApplicationRecord
       break if next_page_token.blank?
     end
 
-    videos.each do |video|
-      RaidVideo.create!(
-        title:             video[:title],
-        score:             video[:score],
-        youtube_id:        video[:youtube_id],
-        thumbnail_url:     video[:thumbnail_url],
-        published_at:      video[:published_at],
-        raid_type:         raid.type,
-        raid_boss:         raid.boss,
-        raid_terrain:      raid.terrain,
-        raid_defense_type: raid.defense_type,
-      )
-    end
+    RaidVideo.insert_all(
+      videos.map { |video|
+        {
+          title:             video[:title],
+          score:             video[:score],
+          youtube_id:        video[:youtube_id],
+          thumbnail_url:     video[:thumbnail_url],
+          published_at:      video[:published_at],
+          raid_type:         raid.type,
+          raid_boss:         raid.boss,
+          raid_terrain:      raid.terrain,
+          raid_defense_type: raid.defense_type,
+        }
+      }
+    ) unless videos.empty?
   end
 
   private

@@ -5,7 +5,7 @@ class AddRaidVideos < ActiveRecord::Migration[8.0]
       t.bigint :score, null: false
       t.string :youtube_id, null: false
       t.string :thumbnail_url, null: false
-      t.string :published_at, null: false
+      t.datetime :published_at, null: false
 
       t.string :raid_type, null: false
       t.string :raid_boss, null: false
