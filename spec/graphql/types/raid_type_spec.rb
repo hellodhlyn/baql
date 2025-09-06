@@ -113,7 +113,7 @@ RSpec.describe Types::RaidType, type: :graphql do
         expect(first_video["title"]).to eq("Video 3")
         expect(first_video["score"]).to eq(55555555)
         expect(first_video["youtubeId"]).to eq("dQw4w9WgXcQ")
-        expect(first_video["publishedAt"]).to eq("2025-02-27T10:00:00Z")
+        expect(Time.parse(first_video["publishedAt"])).to eq(Time.parse("2025-02-27T10:00:00Z"))
       end
 
       it "returns pagination info" do
