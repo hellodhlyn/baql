@@ -19,8 +19,8 @@ class Raid < ApplicationRecord
     defense_types.first.defense_type
   end
 
-  # @params [Hash] include_students [{ uid: String, tier: Int }]
-  # @params [Hash] exclude_students [{ uid: String, tier: Int }]
+  # @params [Hash] include_students [{ uid: String, tier: Int, tiers: [Int] }]
+  # @params [Hash] exclude_students [{ uid: String, tier: Int, tiers: [Int] }]
   def ranks(defense_type: nil, rank_after: nil, rank_before: nil, first: 20, include_students: nil, exclude_students: nil)
     return [] if type == "elimination" && (defense_type.blank? || defense_types.none? { |type| type.defense_type == defense_type })
     return [] if raid_index_jp.blank? || !rank_visible || type == "unlimit"
@@ -74,15 +74,11 @@ class Raid < ApplicationRecord
 
       if include_students.present?
         # Check if all include_students are present in the row
-        next unless include_students.all? do |filter|
-          slots.any? { |slot| slot[:student_uid] == filter[:uid] && slot[:tier].to_i >= filter[:tier] }
-        end
+        next unless include_students.all? { |filter| slots.any? { |slot| filter_matches_slot(filter, slot) } }
       end
       if exclude_students.present?
         # Check if any exclude_students are present in the row
-        next if exclude_students.any? do |filter|
-          slots.any? { |slot| slot[:student_uid] == filter[:uid] && slot[:tier].to_i <= filter[:tier] }
-        end
+        next if exclude_students.any? { |filter| slots.any? { |slot| filter_matches_slot(filter, slot) } }
       end
 
       matched_rows << row
@@ -90,5 +86,13 @@ class Raid < ApplicationRecord
     end
 
     rank_before.present? ? matched_rows.reverse : matched_rows
+  end
+
+  private
+
+  def filter_matches_slot(filter, slot)
+    slot[:student_uid] == filter[:uid] &&
+      (!filter[:tier].present? || filter[:tier].to_i == slot[:tier].to_i) &&
+      (!filter[:tiers].present? || filter[:tiers].include?(slot[:tier].to_i))
   end
 end

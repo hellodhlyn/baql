@@ -4,7 +4,8 @@ module Types
 
     class RaidRankFilterType < Types::Base::InputObject
       argument :uid, String, required: true
-      argument :tier, Integer, required: true
+      argument :tier, Integer, required: false, deprecation_reason: "Use `tiers` instead"
+      argument :tiers, [Integer], required: false
     end
 
     class RaidRankPartyType < Types::Base::Object

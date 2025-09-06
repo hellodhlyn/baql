@@ -72,7 +72,21 @@ RSpec.describe Raid, type: :model do
       context "case #1" do
         let(:args) do
           { include_students: [
-            { uid: "10008", tier: 3 }, # 네루
+            { uid: "10008", tier: 8 }, # 네루
+          ] }
+        end
+
+        it "returns if all include_students are present in the row" do
+          expect(subject).to be_an(Array)
+          expect(subject.size).to eq(7)
+          expect(subject.map { |row| row[:rank] }).to eq([1, 2, 4, 14, 15, 16, 19])
+        end
+      end
+
+      context "case #2" do
+        let(:args) do
+          { include_students: [
+            { uid: "10008", tiers: [3, 4, 5, 6, 7, 8] }, # 네루
           ] }
         end
 
@@ -83,25 +97,40 @@ RSpec.describe Raid, type: :model do
         end
       end
 
+      context "case #2" do
+        let(:args) do
+          { include_students: [
+            { uid: "10008", tier: 8 }, # 네루
+            { uid: "20038", tier: 8 }, # 토모에(치파오)
+          ] }
+        end
+
+        it "returns if all include_students are present in the row" do
+          expect(subject).to be_an(Array)
+          expect(subject.size).to eq(1)
+          expect(subject.map { |row| row[:rank] }).to eq([1])
+        end
+      end
+
       context "case #3" do
         let(:args) do
           { include_students: [
-            { uid: "10008", tier: 3 }, # 네루
+            { uid: "10008", tier: 8 }, # 네루
             { uid: "20038", tier: 7 }, # 토모에(치파오)
           ] }
         end
 
         it "returns if all include_students are present in the row" do
           expect(subject).to be_an(Array)
-          expect(subject.size).to eq(5)
-          expect(subject.map { |row| row[:rank] }).to eq([1, 2, 16, 19, 20])
+          expect(subject.size).to eq(3)
+          expect(subject.map { |row| row[:rank] }).to eq([2, 16, 19])
         end
       end
     end
 
     context "when include_students and first is given" do
       let(:args) do
-        { include_students: [{ uid: "10008", tier: 3 }], first: 5 }
+        { include_students: [{ uid: "10008", tier: 8 }], first: 5 }
       end
 
       it "returns an array of ranks with the given count" do
@@ -112,18 +141,18 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_after is given" do
         let(:args) do
-        { include_students: [{ uid: "10008", tier: 3 }], rank_after: 4 }
+        { include_students: [{ uid: "10008", tier: 8 }], rank_after: 4 }
       end
 
       it "returns an array of ranks after the given rank (exclusive)" do
-        expect(subject.size).to eq(5)
-        expect(subject.map { |row| row[:rank] }).to eq([14, 15, 16, 19, 20])
+        expect(subject.size).to eq(4)
+        expect(subject.map { |row| row[:rank] }).to eq([14, 15, 16, 19])
       end
     end
 
     context "when include_students and rank_before is given" do
       let(:args) do
-        { include_students: [{ uid: "10008", tier: 3 }], rank_before: 16 }
+        { include_students: [{ uid: "10008", tier: 8 }], rank_before: 16 }
       end
 
       it "returns an array of ranks before the given rank (exclusive)" do
@@ -134,7 +163,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_after and first is given" do
       let(:args) do
-        { include_students: [{ uid: "10008", tier: 3 }], rank_after: 4, first: 3 }
+        { include_students: [{ uid: "10008", tier: 8 }], rank_after: 4, first: 3 }
       end
 
       it "returns an array of ranks after the given rank (exclusive)" do
@@ -145,7 +174,7 @@ RSpec.describe Raid, type: :model do
 
     context "when include_students and rank_before and first is given" do
       let(:args) do
-        { include_students: [{ uid: "10008", tier: 3 }], rank_before: 16, first: 3 }
+        { include_students: [{ uid: "10008", tier: 8 }], rank_before: 16, first: 3 }
       end
 
       it "returns an array of ranks before the given rank (exclusive)" do
@@ -164,8 +193,8 @@ RSpec.describe Raid, type: :model do
 
         it "not returns if any exclude_students are present in the row" do
           expect(subject).to be_an(Array)
-          expect(subject.size).to eq(12)
-          expect(subject.map { |row| row[:rank] }).to eq([3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 17, 18])
+          expect(subject.size).to eq(13)
+          expect(subject.map { |row| row[:rank] }).to eq([3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 17, 18, 20])
         end
       end
     end
