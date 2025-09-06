@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_23_152220) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_03_153447) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -58,6 +58,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_23_152220) do
     t.datetime "updated_at", null: false
     t.index ["raid_id"], name: "index_raid_statistics_on_raid_id"
     t.index ["student_uid", "raid_id", "defense_type"], name: "idx_on_student_uid_raid_id_defense_type_0eac46e8be", unique: true
+  end
+
+  create_table "raid_videos", force: :cascade do |t|
+    t.string "title", null: false
+    t.bigint "score", null: false
+    t.string "youtube_id", null: false
+    t.string "thumbnail_url", null: false
+    t.datetime "published_at", null: false
+    t.string "raid_type", null: false
+    t.string "raid_boss", null: false
+    t.string "raid_terrain", null: false
+    t.string "raid_defense_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["raid_type", "raid_boss", "raid_terrain", "raid_defense_type"], name: "idx_on_raid_type_raid_boss_raid_terrain_raid_defens_a2b1f3c8d3"
   end
 
   create_table "raids", force: :cascade do |t|
