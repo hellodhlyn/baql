@@ -16,6 +16,7 @@ class Item < ApplicationRecord
           when "R" then 2
           when "SR" then 3
           when "SSR" then 4
+          else raise "unknown rarity value: #{raw_item["Rarity"].inspect} for item #{uid}"
         end,
       )
 

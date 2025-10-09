@@ -49,13 +49,10 @@ RSpec.describe Event, type: :model do
       it "returns an array of rewards" do
         expect(subject.first.rewards).to all(be_a(Event::StageReward))
         expect(subject.first.rewards.size).to eq(3)
-        expect(subject.first.rewards.first.item).to be_a(Item)
-          .and have_attributes(
-            item_id: "80070",
-            name: "특제 신년 복주머니",
-            image_id: "item_icon_event_token_0_s11",
-          )
-        expect(subject.first.rewards.first.item.event_bonuses.size).to eq(5)
+        expect(subject.first.rewards.first.item[:item_id]).to eq("80070")
+        expect(subject.first.rewards.first.item[:name]).to eq("특제 신년 복주머니")
+        expect(subject.first.rewards.first.item[:image_id]).to eq("item_icon_event_token_0_s11")
+        expect(subject.first.rewards.first.item[:event_bonuses].size).to eq(5)
       end
     end
 
@@ -63,7 +60,7 @@ RSpec.describe Event, type: :model do
       let(:event) { FactoryBot.create(:event, event_index: 809, rerun: true) }
 
       it "returns an array of rewards" do
-        expect(subject.first.rewards.first.item.event_bonuses.size).to eq(7)
+        expect(subject.first.rewards.first.item[:event_bonuses].size).to eq(7)
       end
     end
 
