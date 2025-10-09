@@ -1,6 +1,9 @@
 class Student < ApplicationRecord
+  include ImageSyncable
+
   has_many :pickups, primary_key: :uid, foreign_key: :student_uid
   has_many :raid_statistics, primary_key: :uid, foreign_key: :student_uid
+  has_many :skill_items, primary_key: :uid, foreign_key: :student_uid, class_name: "StudentSkillItem"
 
   after_save :flush_cache
 
@@ -39,6 +42,22 @@ class Student < ApplicationRecord
         schale_db_id: row["PathName"],
       )
 
+      row["SkillExMaterial"].each_with_index do |item_uids, index|
+        level = index + 2
+        item_uids.each_with_index do |item_uid, item_index|
+          StudentSkillItem.find_or_initialize_by(student_uid: student.uid, item_uid: item_uid.to_s, skill_type: "ex", skill_level: level)
+            .update!(amount: row["SkillExMaterialAmount"][index][item_index])
+        end
+      end
+
+      row["SkillMaterial"].each_with_index do |item_uids, index|
+        level = index + 2
+        item_uids.each_with_index do |item_uid, item_index|
+          StudentSkillItem.find_or_initialize_by(student_uid: student.uid, item_uid: item_uid.to_s, skill_type: "normal", skill_level: level)
+            .update!(amount: row["SkillMaterialAmount"][index][item_index])
+        end
+      end
+
       if pickup_student_names.include?(student.name)
         pickup = Pickup.find_by(student_uid: nil, fallback_student_name: student.name)
         pickup.update!(student_uid: student.uid) if pickup
@@ -72,8 +91,8 @@ class Student < ApplicationRecord
   end
 
   def sync_images!
-    sync_image!("assets/images/students/standing/#{uid}", SchaleDB::V1::Images.student_standing(uid))
-    sync_image!("assets/images/students/collection/#{uid}", SchaleDB::V1::Images.student_collection(uid))
+    self.class.sync_image!("assets/images/students/standing/#{uid}", SchaleDB::V1::Images.student_standing(uid))
+    self.class.sync_image!("assets/images/students/collection/#{uid}", SchaleDB::V1::Images.student_collection(uid))
     nil
   end
 
@@ -85,17 +104,5 @@ class Student < ApplicationRecord
 
   def flush_cache
     Rails.cache.delete(self.class.cache_key(uid))
-  end
-
-  def sync_image!(key, image_body)
-    return if image_body.blank?
-    Rails.logger.info("Syncing student image '#{key}' to S3")
-    s3_client.put_object(bucket: ENV["STATIC_BUCKET_NAME"], key: key, body: image_body)
-  rescue => e
-    Rails.logger.error("Failed to sync student image '#{key}' to S3: #{e.message}")
-  end
-
-  def s3_client
-    @s3_client ||= Aws::S3::Client.new
   end
 end
