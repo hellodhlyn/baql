@@ -36,7 +36,7 @@ module Types
       argument :skill_level, Int, required: false
     end
     def skill_items(skill_type: nil, skill_level: nil)
-      query = StudentSkillItem.where(student_uid: object.uid)
+      query = StudentSkillItem.includes(:item).where(student_uid: object.uid)
       query = query.where(skill_type: skill_type) if skill_type.present?
       query = query.where(skill_level: skill_level) if skill_level.present?
       query.order(skill_type: :asc, skill_level: :asc)
