@@ -6,8 +6,20 @@ module Types
   end
 
   class StageType < Types::Base::Object
+    class StageItemEventBonusType < Types::Base::Object
+      field :student, StudentType, null: false
+      field :ratio, Float, null: false
+    end
+
+    class StageItemType < Types::Base::Object
+      field :item_id, String, null: false
+      field :name, String, null: false
+      field :image_id, String, null: false
+      field :event_bonuses, [StageItemEventBonusType], null: false
+    end
+
     class StageRewardType < Types::Base::Object
-      field :item, ItemType, null: false
+      field :item, StageItemType, null: false
       field :amount, Float, null: false
     end
 

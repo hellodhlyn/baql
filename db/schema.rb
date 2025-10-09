@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_03_153447) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_09_085024) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -29,6 +29,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_03_153447) do
     t.datetime "updated_at", null: false
     t.bigint "event_index"
     t.boolean "endless", default: false, null: false
+  end
+
+  create_table "items", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "name", null: false
+    t.string "category", null: false
+    t.string "sub_category"
+    t.integer "rarity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_items_on_uid", unique: true
   end
 
   create_table "pickups", force: :cascade do |t|
@@ -93,6 +104,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_03_153447) do
     t.jsonb "defense_types", default: []
     t.index ["since"], name: "index_raids_on_since"
     t.index ["uid"], name: "index_raids_on_uid", unique: true
+  end
+
+  create_table "student_skill_items", force: :cascade do |t|
+    t.string "student_uid", null: false
+    t.string "item_uid", null: false
+    t.string "skill_type", null: false
+    t.integer "skill_level", null: false
+    t.integer "amount", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["item_uid"], name: "index_student_skill_items_on_item_uid"
+    t.index ["student_uid"], name: "index_student_skill_items_on_student_uid"
   end
 
   create_table "students", force: :cascade do |t|

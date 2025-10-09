@@ -63,7 +63,7 @@ class RaidVideo < ApplicationRecord
     end
 
     terrain_name = case raid.terrain
-      when "indoor"  then "室内"
+      when "indoor"  then "屋内"
       when "outdoor" then "屋外"
       when "street"  then "市街地"
     end

@@ -30,5 +30,16 @@ module Types
     def pickups
       Pickup.where(student_uid: object.uid).order(since: :asc)
     end
+
+    field :skill_items, [Types::SkillItemType], null: false do
+      argument :skill_type, Types::SkillItemType::SkillTypeEnum, required: false
+      argument :skill_level, Int, required: false
+    end
+    def skill_items(skill_type: nil, skill_level: nil)
+      query = StudentSkillItem.includes(:item).where(student_uid: object.uid)
+      query = query.where(skill_type: skill_type) if skill_type.present?
+      query = query.where(skill_level: skill_level) if skill_level.present?
+      query.order(skill_type: :asc, skill_level: :asc)
+    end
   end
 end

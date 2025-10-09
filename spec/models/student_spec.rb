@@ -22,6 +22,8 @@ RSpec.describe Student, type: :model do
 
       allow(SchaleDB::V1::Images).to receive(:student_standing).and_return(nil)
       allow(SchaleDB::V1::Images).to receive(:student_collection).and_return(nil)
+
+      FactoryBot.create(:item, uid: "183", name: "온전한 로혼치 사본", rarity: 4)
     end
 
     context "when the student data does not exist" do
@@ -64,6 +66,17 @@ RSpec.describe Student, type: :model do
 
         expect { subject }
           .not_to change { Pickup.find_by(fallback_student_name: "카즈사").student_uid }
+      end
+    end
+
+    context "when the skill material data does not exist" do
+      it "create skill item data" do
+        expect { subject }.to change { StudentSkillItem.count }.by(3)
+        expect(StudentSkillItem.where(student_uid: "13005").pluck(:skill_type, :skill_level, :amount)).to contain_exactly(
+          ["ex", 5, 9],
+          ["normal", 8, 3],
+          ["normal", 9, 8],
+        )
       end
     end
   end

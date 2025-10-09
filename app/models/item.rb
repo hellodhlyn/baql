@@ -1,25 +1,28 @@
-class Item
-  attr_accessor :item_id, :name, :image_id, :event_bonuses
+class Item < ApplicationRecord
+  include ImageSyncable
 
-  EventBonus = Data.define(:student_uid, :ratio) do |data|
-    def student = Student.find_by_uid(student_uid)
-  end
+  validates :uid, presence: true, uniqueness: true
 
-  def self.find_by_item_id(item_id, rerun_event: false)
-    Rails.cache.fetch("data::items::#{item_id}", expires_in: 1.minute) do
-      raw_items = Rails.cache.fetch("data::items::all_v1", expires_in: 1.hour) { SchaleDB::V1::Data.items }
-      return nil unless raw_items.key?(item_id)
+  def self.sync!
+    raw_items = SchaleDB::V1::Data.items
+    raw_items.each do |uid, raw_item|
+      item = Item.find_or_initialize_by(uid: uid)
+      item.update!(
+        name: raw_item["Name"],
+        category: raw_item["Category"].downcase,
+        sub_category: raw_item["SubCategory"]&.downcase,
+        rarity: case raw_item["Rarity"]
+          when "N" then 1
+          when "R" then 2
+          when "SR" then 3
+          when "SSR" then 4
+          else raise "unknown rarity value: #{raw_item["Rarity"].inspect} for item #{uid}"
+        end,
+      )
 
-      raw_item = raw_items[item_id]
-      Item.new.tap do |item|
-        item.item_id = raw_item["Id"].to_s
-        item.name = raw_item["Name"]
-        item.image_id = raw_item["Icon"]
-
-        event_bonus_key = rerun_event ? "EventBonusRerun" : "EventBonus"
-        item.event_bonuses = raw_item[event_bonus_key]&.[]("Jp")&.map do |student_uid, ratio_raw|
-          EventBonus.new(student_uid.to_s, ratio_raw.to_f / 10000)
-        end || []
+      if item.saved_changes?
+        Rails.logger.info("Item #{item.name}(#{item.uid}) has been updated")
+        sync_image!("assets/images/items/#{item.uid}", SchaleDB::V1::Images.item_icon(raw_item["Icon"]))
       end
     end
   end
