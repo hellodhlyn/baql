@@ -41,5 +41,14 @@ module Types
       query = query.where(skill_level: skill_level) if skill_level.present?
       query.order(skill_type: :asc, skill_level: :asc)
     end
+
+    field :favorite_items, [Types::FavoriteItemType], null: false do
+      argument :favorited, Boolean, required: false
+    end
+    def favorite_items(favorited: nil)
+      query = StudentFavoriteItem.includes(:item).where(student_uid: object.uid)
+      query = query.where(favorited: favorited) if favorited.present?
+      query.order(favorite_level: :desc)
+    end
   end
 end

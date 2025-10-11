@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_09_085024) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_10_061233) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -104,6 +104,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_085024) do
     t.jsonb "defense_types", default: []
     t.index ["since"], name: "index_raids_on_since"
     t.index ["uid"], name: "index_raids_on_uid", unique: true
+  end
+
+  create_table "student_favorite_items", force: :cascade do |t|
+    t.string "student_uid", null: false
+    t.string "item_uid", null: false
+    t.integer "exp", null: false
+    t.integer "favorite_level", null: false
+    t.boolean "favorited", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["item_uid"], name: "index_student_favorite_items_on_item_uid"
+    t.index ["student_uid"], name: "index_student_favorite_items_on_student_uid"
   end
 
   create_table "student_skill_items", force: :cascade do |t|

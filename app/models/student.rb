@@ -3,7 +3,6 @@ class Student < ApplicationRecord
 
   has_many :pickups, primary_key: :uid, foreign_key: :student_uid
   has_many :raid_statistics, primary_key: :uid, foreign_key: :student_uid
-  has_many :skill_items, primary_key: :uid, foreign_key: :student_uid, class_name: "StudentSkillItem"
 
   after_save :flush_cache
 
