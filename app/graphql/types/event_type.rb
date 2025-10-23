@@ -5,7 +5,7 @@ module Types
     field :start, Int, null: true
   end
 
-  class StageType < Types::Base::Object
+  class LegacyStageType < Types::Base::Object
     class StageItemEventBonusType < Types::Base::Object
       field :student, StudentType, null: false
       field :ratio, Float, null: false
@@ -55,7 +55,29 @@ module Types
       end
     end
 
-    field :stages, [StageType], null: false, deprecation_reason: "Use `legacyStages` instead"
-    field :legacy_stages, [StageType], null: false
+    field :legacy_stages, [LegacyStageType], null: false, deprecation_reason: "Use `stages` instead"
+
+    field :stages, [EventStageType], null: false do
+      argument :difficulty, Int, required: false
+    end
+    def stages(difficulty: nil)
+      query = object.stages.includes(:rewards)
+      query = query.where(difficulty: difficulty) if difficulty.present?
+
+      # Custom sorting: 1) by difficulty, 2) by index with number strings sorted numerically
+      query.to_a.sort_by do |stage|
+        # First sort by difficulty
+        difficulty_sort = stage.difficulty
+
+        # Then sort by index with number indices first, then alphabetically
+        index_sort = if stage.index.match?(/^\d+$/)
+          [0, stage.index.to_i]
+        else
+          [1, stage.index]
+        end
+
+        [difficulty_sort, index_sort]
+      end
+    end
   end
 end

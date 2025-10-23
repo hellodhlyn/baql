@@ -10,9 +10,37 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_10_061233) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "event_stage_rewards", force: :cascade do |t|
+    t.string "stage_uid", null: false
+    t.string "reward_type", null: false
+    t.string "reward_uid", null: false
+    t.string "reward_requirement"
+    t.integer "amount", null: false
+    t.integer "amount_min"
+    t.integer "amount_max"
+    t.decimal "chance", precision: 10, scale: 4
+    t.jsonb "bonuses", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stage_uid"], name: "index_event_stage_rewards_on_stage_uid"
+  end
+
+  create_table "event_stages", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "event_uid", null: false
+    t.string "name", null: false
+    t.integer "difficulty", null: false
+    t.string "index", null: false
+    t.integer "entry_ap"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_uid"], name: "index_event_stages_on_event_uid"
+    t.index ["uid"], name: "index_event_stages_on_uid", unique: true
+  end
 
   create_table "events", force: :cascade do |t|
     t.string "uid", null: false

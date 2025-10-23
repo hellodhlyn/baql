@@ -22,16 +22,36 @@ RSpec.describe Event, type: :model do
     end
   end
 
-  describe "#stages" do
+  describe "#sync_stages!" do
     before do
       stub_request(:get, "https://schaledb.com/data/kr/events.min.json")
-        .to_return(body: File.read("spec/_fixtures/events.min.json"))
+        .to_return(body: ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/events.json.gz")))
 
       stub_request(:get, "https://schaledb.com/data/kr/items.min.json")
         .to_return(body: File.read("spec/_fixtures/items.min.json"))
     end
 
-    subject { event.stages }
+    subject { event.sync_stages! }
+
+    context "if event_index presents and the event is not rerun" do
+      let(:event) { FactoryBot.create(:event, event_index: 809) }
+
+      it "should sync stages" do
+        expect { subject }.to change { EventStage.count }.by(17)
+      end
+    end
+  end
+
+  describe "#legacy_stages" do
+    before do
+      stub_request(:get, "https://schaledb.com/data/kr/events.min.json")
+        .to_return(body: ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/events.json.gz")))
+
+      stub_request(:get, "https://schaledb.com/data/kr/items.min.json")
+        .to_return(body: File.read("spec/_fixtures/items.min.json"))
+    end
+
+    subject { event.legacy_stages }
 
     context "if event_index presents and the event is not rerun" do
       let(:event) { FactoryBot.create(:event, event_index: 809) }
