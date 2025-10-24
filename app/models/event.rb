@@ -10,6 +10,7 @@ class Event < ApplicationRecord
 
   has_many :pickups, primary_key: :uid, foreign_key: :event_uid
   has_many :stages, class_name: "EventStage", primary_key: :uid, foreign_key: :event_uid
+  has_many :shop_resources, class_name: "EventShopResource", primary_key: :uid, foreign_key: :event_uid
 
   ### Video contents
   Video = Data.define(:title, :youtube, :start)
@@ -34,27 +35,30 @@ class Event < ApplicationRecord
         name:       raw_stage["Name"],
         difficulty: raw_stage["Difficulty"],
         index:      raw_stage["Stage"].to_s,
-        entry_ap:   raw_stage["EntryCost"]&.find { |item_id, _| item_id == 5 }&.last,
+        entry_ap:   raw_stage["EntryCost"]&.find { |item_id, _| item_id == 5 }&.last || 0,
       )
 
       raw_stage["Rewards"].each do |raw_reward|
-        reward = EventStageReward.find_or_initialize_by(stage: stage, reward_type: raw_reward["Type"].underscore, reward_uid: raw_reward["Id"].to_s)
+        reward = EventStageReward.find_or_initialize_by(stage: stage, reward_type: raw_reward["Type"].underscore, reward_uid: raw_reward["Id"].to_s, reward_requirement: raw_reward["RewardType"]&.underscore)
         reward.update!(
-          reward_requirement: raw_reward["RewardType"]&.underscore,
           amount:             raw_reward["Amount"],
           amount_min:         raw_reward["AmountMin"],
           amount_max:         raw_reward["AmountMax"],
           chance:             raw_reward["Chance"]&.to_d,
         )
 
-        if reward.reward_type == "Item"
+        if reward.reward_type == "item"
           raw_item = raw_items[reward.reward_uid]
-          reward.update!(bonuses: raw_item[self.rerun ? "EventBonusRerun" : "EventBonus"]&.[]("Jp")&.map do |student_uid, ratio_raw|
-            EventStageReward::RewardBonus.new(student_uid.to_s, ratio_raw.to_d / 10000)
-          end || [])
+          raw_item[self.rerun ? "EventBonusRerun" : "EventBonus"]&.[]("Jp")&.each do |student_uid, ratio_raw|
+            reward_resource = Resources::Item.find_by(uid: reward.reward_uid)
+
+            bonus = EventStageRewardBonus.find_or_initialize_by(reward_resource: reward_resource, student_uid: student_uid.to_s)
+            bonus.update!(ratio: ratio_raw.to_d / 10000)
+          end
         end
       end
     end
+
     nil
   end
 
@@ -76,7 +80,6 @@ class Event < ApplicationRecord
       end
     end
   end
-  alias_method :legacy_stages, :stages
 
   # @deprecated Use `Item` model instead
   EventBonus = Data.define(:student_uid, :ratio) do |data|

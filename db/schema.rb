@@ -14,6 +14,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "event_shop_resources", force: :cascade do |t|
+    t.string "event_uid", null: false
+    t.string "uid", null: false
+    t.string "resource_type", null: false
+    t.string "resource_uid", null: false
+    t.integer "resource_amount", null: false
+    t.string "payment_resource_type", null: false
+    t.string "payment_resource_uid", null: false
+    t.integer "payment_resource_amount", null: false
+    t.integer "shop_amount"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_uid"], name: "index_event_shop_resources_on_event_uid"
+  end
+
+  create_table "event_stage_reward_bonuses", force: :cascade do |t|
+    t.string "reward_resource_type", null: false
+    t.string "reward_resource_uid", null: false
+    t.string "student_uid", null: false
+    t.decimal "ratio", precision: 10, scale: 4
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["reward_resource_type", "reward_resource_uid", "student_uid"], name: "idx_on_reward_resource_type_reward_resource_uid_stu_6cba816250", unique: true
+    t.index ["student_uid"], name: "index_event_stage_reward_bonuses_on_student_uid"
+  end
+
   create_table "event_stage_rewards", force: :cascade do |t|
     t.string "stage_uid", null: false
     t.string "reward_type", null: false
@@ -57,6 +83,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.datetime "updated_at", null: false
     t.bigint "event_index"
     t.boolean "endless", default: false, null: false
+  end
+
+  create_table "furnitures", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "name", null: false
+    t.string "category", null: false
+    t.string "sub_category"
+    t.integer "rarity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_furnitures_on_uid", unique: true
   end
 
   create_table "items", force: :cascade do |t|
@@ -132,6 +169,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.jsonb "defense_types", default: []
     t.index ["since"], name: "index_raids_on_since"
     t.index ["uid"], name: "index_raids_on_uid", unique: true
+  end
+
+  create_table "resources", force: :cascade do |t|
+    t.string "type", null: false
+    t.string "uid", null: false
+    t.string "name", null: false
+    t.string "category", null: false
+    t.string "sub_category"
+    t.integer "rarity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["type", "uid"], name: "index_resources_on_type_and_uid", unique: true
   end
 
   create_table "student_favorite_items", force: :cascade do |t|

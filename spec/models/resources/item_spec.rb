@@ -1,6 +1,6 @@
-RSpec.describe Item, type: :model do
+RSpec.describe Resources::Item, type: :model do
   describe ".sync!" do
-    subject { Item.sync! }
+    subject { Resources::Item.sync! }
 
     before do
       stub_request(:get, "https://schaledb.com/data/kr/items.min.json")
@@ -10,8 +10,8 @@ RSpec.describe Item, type: :model do
     end
 
     it "syncs items from the source URL" do
-      expect { subject }.to change { Item.count }.by(4)
-      expect(Item.find_by(uid: "80070")).to have_attributes(
+      expect { subject }.to change { Resources::Item.count }.by(4)
+      expect(Resources::Item.find_by(uid: "80070")).to have_attributes(
         name: "특제 신년 복주머니",
         category: "coin",
         rarity: 1,
