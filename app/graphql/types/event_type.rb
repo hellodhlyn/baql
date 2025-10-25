@@ -55,6 +55,7 @@ module Types
       end
     end
 
-    field :stages, [StageType], null: false
+    field :stages, [StageType], null: false, deprecation_reason: "Use `legacyStages` instead"
+    field :legacy_stages, [StageType], null: false
   end
 end

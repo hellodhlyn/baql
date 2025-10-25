@@ -36,6 +36,7 @@ class Event < ApplicationRecord
       end
     end
   end
+  alias_method :legacy_stages, :stages
 
   # @deprecated Use `Item` model instead
   EventBonus = Data.define(:student_uid, :ratio) do |data|
