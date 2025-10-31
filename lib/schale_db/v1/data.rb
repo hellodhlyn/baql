@@ -16,6 +16,14 @@ module SchaleDB::V1
       get("data/kr/items.min.json")
     end
 
+    def self.furnitures
+      get("data/kr/furniture.min.json")
+    end
+
+    def self.equipments
+      get("data/kr/equipment.min.json")
+    end
+
     private
 
     def self.get(path)

@@ -26,7 +26,7 @@ class Student < ApplicationRecord
 
   def self.sync!
     pickup_student_names = Pickup.where(student_uid: nil).pluck(:fallback_student_name)
-    existing_item_uids = Item.pluck(:uid).to_set
+    existing_item_uids = Resources::Item.pluck(:uid).to_set
 
     SchaleDB::V1::Data.students.each do |uid, row|
       student = find_or_initialize_by(uid: uid)
