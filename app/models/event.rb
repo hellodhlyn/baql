@@ -51,6 +51,7 @@ class Event < ApplicationRecord
           raw_item = raw_items[reward.reward_uid]
           raw_item[self.rerun ? "EventBonusRerun" : "EventBonus"]&.[]("Jp")&.each do |student_uid, ratio_raw|
             reward_resource = Resources::Item.find_by(uid: reward.reward_uid)
+            next unless reward_resource
 
             bonus = EventStageRewardBonus.find_or_initialize_by(reward_resource: reward_resource, student_uid: student_uid.to_s)
             bonus.update!(ratio: ratio_raw.to_d / 10000)
