@@ -3,6 +3,6 @@ class EventStageReward < ApplicationRecord
 
   def item
     return nil unless reward_type == "item"
-    @item ||= Resources::Item.find_by(uid: reward_uid)
+    Resources::Item.find_by(uid: reward_uid)
   end
 end

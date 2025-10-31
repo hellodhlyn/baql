@@ -49,10 +49,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.integer "amount_min"
     t.integer "amount_max"
     t.decimal "chance", precision: 10, scale: 4
-    t.jsonb "bonuses", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["stage_uid"], name: "index_event_stage_rewards_on_stage_uid"
+    t.index ["stage_uid", "reward_type", "reward_uid", "reward_requirement"], name: "idx_on_stage_uid_reward_type_reward_uid_reward_requ_02a1b757b1", unique: true
   end
 
   create_table "event_stages", force: :cascade do |t|
@@ -61,7 +60,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.string "name", null: false
     t.integer "difficulty", null: false
     t.string "index", null: false
-    t.integer "entry_ap"
+    t.integer "entry_ap", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["event_uid"], name: "index_event_stages_on_event_uid"

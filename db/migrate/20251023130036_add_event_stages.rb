@@ -24,7 +24,7 @@ class AddEventStages < ActiveRecord::Migration[8.0]
       t.decimal :chance, precision: 10, scale: 4
       t.timestamps
 
-      t.index [:stage_uid]
+      t.index [:stage_uid, :reward_type, :reward_uid, :reward_requirement], unique: true
     end
 
     create_table :event_stage_reward_bonuses do |t|
