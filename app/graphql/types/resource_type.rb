@@ -4,6 +4,7 @@ module Types
       value "item", value: "item"
       value "equipment", value: "equipment"
       value "furniture", value: "furniture"
+      value "currency", value: "currency"
     end
 
     field :type, ResourceTypeEnum, null: false

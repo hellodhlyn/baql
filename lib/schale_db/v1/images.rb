@@ -22,6 +22,10 @@ module SchaleDB::V1
       get("images/equipment/icon/#{equipment_id}.webp")
     end
 
+    def self.currency_icon(currency_id)
+      get("images/item/icon/#{currency_id}.webp")
+    end
+
     private
 
     def self.get(path)

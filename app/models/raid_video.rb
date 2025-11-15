@@ -81,6 +81,7 @@ class RaidVideo < ApplicationRecord
       when "hovercraft"      then "ホバークラフト"
       when "myouki-kurokage" then "クロカゲ"
       when "geburah"         then "ゲブラ"
+      when "yesod"           then "イェソド"
     end
 
     [

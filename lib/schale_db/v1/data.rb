@@ -24,6 +24,10 @@ module SchaleDB::V1
       get("data/kr/equipment.min.json")
     end
 
+    def self.currencies
+      get("data/kr/currency.min.json")
+    end
+
     private
 
     def self.get(path)

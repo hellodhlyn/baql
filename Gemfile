@@ -14,6 +14,7 @@ gem "aws-sdk-s3"
 gem "puma"
 
 # Ruby extensions
+gem "csv"
 gem "tzinfo-data"
 gem "bootsnap", require: false
 
