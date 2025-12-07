@@ -25,8 +25,8 @@ module Types
     field :boss, String, null: false
     field :terrain, TerrainEnum, null: false
     field :attack_type, Types::Enums::AttackType, null: false
-    field :defense_type, Types::Enums::DefenseType, null: false, deprecation_reason: "Use defense_types instead"
     field :defense_types, [DefenseTypeAndDifficulty], null: false
+    field :raid_index_jp, Integer, null: true
 
     # ==== Ranks ====
     field :rank_visible, Boolean, null: false
