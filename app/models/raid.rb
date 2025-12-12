@@ -9,15 +9,14 @@ class Raid < ApplicationRecord
 
   validates :type, inclusion: { in: RAID_TYPES }
 
+  scope :ongoing, -> { where("since <= ? AND until >= ?", Time.zone.now, Time.zone.now) }
+  scope :upcoming, -> { where("since > ?", Time.zone.now) }
+  scope :past, -> { where("until < ?", Time.zone.now) }
+
   ### Defense types
   DefenseType = Data.define(:defense_type, :difficulty)
 
   json_array_attr :defense_types, DefenseType
-
-  # Old `defense_type` column is deprecated. Use this method for backward compatibility.
-  def defense_type
-    defense_types.first.defense_type
-  end
 
   # @params [Hash] include_students [{ uid: String, tier: Int, tiers: [Int] }]
   # @params [Hash] exclude_students [{ uid: String, tier: Int, tiers: [Int] }]

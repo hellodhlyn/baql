@@ -22,6 +22,20 @@ class Student < ApplicationRecord
       "Unarmed"      => "special",
       "ElasticArmor" => "elastic",
     }
+
+    TACTIC_ROLES = {
+      "DamageDealer" => "attacker",
+      "Tanker"       => "tank",
+      "Supporter"    => "support",
+      "Healer"       => "healer",
+      "Vehicle"      => "tactical_support",
+    }
+
+    POSITIONS = {
+      "Back"   => "back",
+      "Front"  => "front",
+      "Middle" => "middle",
+    }
   end
 
   def self.sync!
@@ -73,10 +87,25 @@ class Student < ApplicationRecord
       attack_type:  SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
       defense_type: SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
       role:         row["SquadType"] == "Main" ? "striker" : "special",
+      position:     SchaleDBMap::POSITIONS[row["Position"]],
+      tactic_role:  SchaleDBMap::TACTIC_ROLES[row["TacticRole"]],
+      birthday:     parse_birthday(row["Birthday"]),
       equipments:   row["Equipment"].map(&:downcase).join(","),
       order:        row["DefaultOrder"],
       schale_db_id: row["PathName"],
     )
+  end
+
+  def self.parse_birthday(birthday_str)
+    match = birthday_str&.match(/(\d+)월\s*(\d+)일/)
+    return nil unless match
+
+    month = match[1].to_i
+    day = match[2].to_i
+
+    Date.new(0, month, day)
+  rescue ArgumentError
+    nil
   end
 
   def self.sync_skill_materials(student, row, existing_item_uids)
