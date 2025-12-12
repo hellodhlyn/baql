@@ -7,11 +7,15 @@ module Types
 
     field :uid, String, null: false
     field :name, String, null: false
+    field :alt_names, [String], null: false
     field :school, String, null: false
     field :initial_tier, Int, null: false
     field :attack_type, Types::Enums::AttackType, null: false
     field :defense_type, Types::Enums::DefenseType, null: false
     field :role, RoleEnum, null: false
+    field :tactic_role, Types::Enums::TacticRoleType, null: false
+    field :position, Types::Enums::PositionType, null: false
+    field :birthday, GraphQL::Types::ISO8601Date, null: true
     field :equipments, [String], null: false
     field :released, Boolean, null: false
     field :order, Int, null: false

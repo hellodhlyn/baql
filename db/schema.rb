@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_12_143413) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -82,6 +82,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.datetime "updated_at", null: false
     t.bigint "event_index"
     t.boolean "endless", default: false, null: false
+    t.text "summary"
+    t.text "description"
+    t.string "tags", default: [], array: true
   end
 
   create_table "furnitures", force: :cascade do |t|
@@ -157,7 +160,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.string "type", null: false
     t.string "terrain"
     t.string "attack_type"
-    t.string "defense_type"
     t.datetime "since", null: false
     t.datetime "until", null: false
     t.boolean "confirmed", default: false, null: false
@@ -221,6 +223,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_23_130036) do
     t.string "multiclass_uid"
     t.string "schale_db_id"
     t.datetime "release_at"
+    t.string "tactic_role"
+    t.string "position"
+    t.date "birthday"
+    t.string "alt_names", default: [], array: true
     t.index ["uid"], name: "index_students_on_uid", unique: true
   end
 end

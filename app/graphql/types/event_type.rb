@@ -41,6 +41,10 @@ module Types
     end
 
     field :type, EventTypeEnum, null: false
+    field :summary, String, null: true
+    field :description, String, null: true
+    field :tags, [String], null: false
+
     field :rerun, Boolean, null: false
     field :endless, Boolean, null: false
     field :image_url, String, null: true

@@ -4,6 +4,7 @@ class Event < ApplicationRecord
   EVENT_TYPES = [
     "event", "mini_event", "guide_mission", "immortal_event",
     "pickup", "archive_pickup", "fes", "campaign", "exercise", "main_story", "collab",
+    "update", "battle_pass",
   ].freeze
 
   validates :type, inclusion: { in: EVENT_TYPES }
@@ -11,6 +12,10 @@ class Event < ApplicationRecord
   has_many :pickups, primary_key: :uid, foreign_key: :event_uid
   has_many :stages, class_name: "EventStage", primary_key: :uid, foreign_key: :event_uid
   has_many :shop_resources, class_name: "EventShopResource", primary_key: :uid, foreign_key: :event_uid
+
+  scope :ongoing, -> { where("since <= ? AND until >= ?", Time.zone.now, Time.zone.now) }
+  scope :upcoming, -> { where("since > ?", Time.zone.now) }
+  scope :past, -> { where("until < ?", Time.zone.now) }
 
   ### Video contents
   Video = Data.define(:title, :youtube, :start)
