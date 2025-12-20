@@ -3,7 +3,7 @@ class Event < ApplicationRecord
 
   EVENT_TYPES = [
     "event", "mini_event", "guide_mission", "immortal_event",
-    "pickup", "archive_pickup", "fes", "campaign", "exercise", "main_story", "collab",
+    "pickup", "fes", "campaign", "exercise", "main_story", "collab",
     "update", "battle_pass",
   ].freeze
 
