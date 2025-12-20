@@ -9,6 +9,7 @@ gem "graphql"
 # Drivers
 gem "pg"
 gem "aws-sdk-s3"
+gem "openssl"
 
 # Web server
 gem "puma"

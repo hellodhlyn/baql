@@ -21,7 +21,7 @@ class StudentFavoriteItem < ApplicationRecord
             favorite_level = 3
             favorited = false
           elsif item["Rarity"] == "SR"
-            favorite_level = [tag_count + 1, 3].min
+            favorite_level = [tag_count + 1, 4].min
             exp = item["ExpValue"] * favorite_level
             favorited = favorite_level >= 2
           elsif item["Rarity"] == "SSR"

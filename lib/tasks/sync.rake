@@ -14,6 +14,7 @@ namespace :sync do
   task items: [:environment] do
     puts "Syncing items data..."
     Resources::Item.sync!
+    StudentFavoriteItem.sync!
   end
 
   task furnitures: [:environment] do
