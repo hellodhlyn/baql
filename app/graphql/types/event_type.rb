@@ -59,6 +59,11 @@ module Types
       end
     end
 
+    field :recruitments, [Types::RecruitmentType], null: false
+    def recruitments
+      object.recruitments.sort_by(&:id)
+    end
+
     field :legacy_stages, [LegacyStageType], null: false, deprecation_reason: "Use `stages` instead"
 
     field :stages, [EventStageType], null: false do

@@ -34,6 +34,10 @@ module Types
     def pickups
       Pickup.where(student_uid: object.uid).order(since: :asc)
     end
+    field :recruitments, [Types::RecruitmentType], null: false
+    def recruitments
+      Pickup.where(student_uid: object.uid).order(since: :asc)
+    end
 
     field :skill_items, [Types::SkillItemType], null: false do
       argument :skill_type, Types::SkillItemType::SkillTypeEnum, required: false

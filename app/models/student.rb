@@ -1,7 +1,10 @@
 class Student < ApplicationRecord
   include ImageSyncable
 
+  # @deprecated Use `recruitments` instead
   has_many :pickups, primary_key: :uid, foreign_key: :student_uid
+  alias_method :recruitments, :pickups
+
   has_many :raid_statistics, primary_key: :uid, foreign_key: :student_uid
 
   after_save :flush_cache

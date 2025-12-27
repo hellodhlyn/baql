@@ -9,7 +9,10 @@ class Event < ApplicationRecord
 
   validates :type, inclusion: { in: EVENT_TYPES }
 
+  # @deprecated Use `recruitments` instead
   has_many :pickups, primary_key: :uid, foreign_key: :event_uid
+  alias_method :recruitments, :pickups
+
   has_many :stages, class_name: "EventStage", primary_key: :uid, foreign_key: :event_uid
   has_many :shop_resources, class_name: "EventShopResource", primary_key: :uid, foreign_key: :event_uid
 
