@@ -9,7 +9,7 @@ Used by [mollulog.net](https://mollulog.net).
 
 ### Prerequisites
 
-- Ruby 3.4+
+- Ruby 4.0+
 - Docker
 
 ### Run Server
