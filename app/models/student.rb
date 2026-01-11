@@ -5,8 +5,6 @@ class Student < ApplicationRecord
   has_many :pickups, primary_key: :uid, foreign_key: :student_uid
   alias_method :recruitments, :pickups
 
-  has_many :raid_statistics, primary_key: :uid, foreign_key: :student_uid
-
   after_save :flush_cache
 
   scope :all_without_multiclass, -> { where("multiclass_uid is null or multiclass_uid = uid") }
