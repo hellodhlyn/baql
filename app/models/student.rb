@@ -15,13 +15,15 @@ class Student < ApplicationRecord
       "Pierce"    => "piercing",
       "Mystic"    => "mystic",
       "Sonic"     => "sonic",
+      "Chemical"  => "chemical",
     }
 
     DEFENSE_TYPES = {
-      "LightArmor"   => "light",
-      "HeavyArmor"   => "heavy",
-      "Unarmed"      => "special",
-      "ElasticArmor" => "elastic",
+      "LightArmor"     => "light",
+      "HeavyArmor"     => "heavy",
+      "Unarmed"        => "special",
+      "ElasticArmor"   => "elastic",
+      "CompositeArmor" => "composite",
     }
 
     TACTIC_ROLES = {
