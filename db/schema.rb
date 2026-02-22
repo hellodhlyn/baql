@@ -10,9 +10,43 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_12_143413) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "campaigns", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "content_type", null: false
+    t.string "region", null: false
+    t.integer "drop_rate", null: false
+    t.datetime "since", null: false
+    t.datetime "until", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["since"], name: "index_campaigns_on_since"
+    t.index ["uid"], name: "index_campaigns_on_uid", unique: true
+  end
+
+  create_table "event_content_schedules", force: :cascade do |t|
+    t.bigint "event_content_id", null: false
+    t.string "region", null: false
+    t.string "run_type", null: false
+    t.datetime "start_at", null: false
+    t.datetime "end_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_id", "region", "run_type"], name: "idx_on_event_content_id_region_run_type_d1a563d994", unique: true
+    t.index ["event_content_id"], name: "index_event_content_schedules_on_event_content_id"
+    t.index ["region", "start_at", "end_at"], name: "idx_on_region_start_at_end_at_636d06fff6"
+  end
+
+  create_table "event_contents", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_event_contents_on_uid", unique: true
+  end
 
   create_table "event_shop_resources", force: :cascade do |t|
     t.string "event_uid", null: false
@@ -85,17 +119,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_12_143413) do
     t.text "summary"
     t.text "description"
     t.string "tags", default: [], array: true
-  end
-
-  create_table "furnitures", force: :cascade do |t|
-    t.string "uid", null: false
-    t.string "name", null: false
-    t.string "category", null: false
-    t.string "sub_category"
-    t.integer "rarity", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["uid"], name: "index_furnitures_on_uid", unique: true
+    t.index ["since"], name: "index_events_on_since"
+    t.index ["uid"], name: "index_events_on_uid", unique: true
   end
 
   create_table "items", force: :cascade do |t|
@@ -107,6 +132,49 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_12_143413) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_items_on_uid", unique: true
+  end
+
+  create_table "joint_firing_drills", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "region", null: false
+    t.string "drill_type", null: false
+    t.integer "season", null: false
+    t.datetime "since", null: false
+    t.datetime "until", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["since"], name: "index_joint_firing_drills_on_since"
+    t.index ["uid"], name: "index_joint_firing_drills_on_uid", unique: true
+  end
+
+  create_table "main_story_chapters", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "season", null: false
+    t.string "volume", null: false
+    t.integer "chapter", null: false
+    t.integer "episode_count", null: false
+    t.jsonb "volume_title", default: {}, null: false
+    t.jsonb "chapter_title", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["season", "volume", "chapter"], name: "index_main_story_chapters_on_season_and_volume_and_chapter", unique: true
+    t.index ["uid"], name: "index_main_story_chapters_on_uid", unique: true
+  end
+
+  create_table "main_story_parts", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "chapter_uid", null: false
+    t.integer "part_index", null: false
+    t.jsonb "part_name", default: {}, null: false
+    t.string "image_url"
+    t.jsonb "videos", default: [], null: false
+    t.jsonb "release_at", default: {}, null: false
+    t.integer "first_episode_number"
+    t.integer "last_episode_number"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chapter_uid"], name: "index_main_story_parts_on_chapter_uid"
+    t.index ["uid"], name: "index_main_story_parts_on_uid", unique: true
   end
 
   create_table "pickups", force: :cascade do |t|
@@ -229,4 +297,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_12_143413) do
     t.string "alt_names", default: [], array: true
     t.index ["uid"], name: "index_students_on_uid", unique: true
   end
+
+  create_table "translations", force: :cascade do |t|
+    t.string "language", null: false
+    t.string "key", null: false
+    t.text "value", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key", "language"], name: "index_translations_on_key_and_language", unique: true
+  end
+
+  add_foreign_key "event_content_schedules", "event_contents"
 end

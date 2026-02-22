@@ -28,6 +28,10 @@ module SchaleDB::V1
       get("data/kr/currency.min.json")
     end
 
+    def self.localization(lang)
+      get("data/#{lang}/localization.min.json")
+    end
+
     private
 
     def self.get(path)

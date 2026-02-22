@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :event do
-    uid { "0068-from-opera-with-love" }
+    sequence(:uid) { |n| "event-#{n}" }
     name { "0068 오페라로부터 사랑을 담아서!" }
     type { "event" }
     rerun { false }
