@@ -1,5 +1,5 @@
 class Pickup < ApplicationRecord
-  PICKUP_TYPES = ["usual", "limited", "given", "fes", "archive", "recollect"].freeze
+  PICKUP_TYPES = ["usual", "limited", "given", "fes", "archive", "recollect", "encore"].freeze
 
   belongs_to :event, primary_key: :uid, foreign_key: :event_uid
   belongs_to :student, primary_key: :uid, foreign_key: :student_uid, optional: true

@@ -14,14 +14,15 @@ class CreateEventContents < ActiveRecord::Migration[8.0]
     create_table :event_contents do |t|
       t.string :uid, null: false
       t.string :baql_id, null: false
-
+      t.jsonb :raw_data_first
+      t.jsonb :raw_data_rerun
       t.timestamps
 
       t.index :uid, unique: true
     end
 
     create_table :event_content_schedules do |t|
-      t.references :event_content, null: false, foreign_key: true
+      t.string :event_content_uid, null: false
       t.string :region, null: false
       t.string :run_type, null: false
       t.datetime :start_at, null: false
@@ -29,7 +30,7 @@ class CreateEventContents < ActiveRecord::Migration[8.0]
 
       t.timestamps
 
-      t.index [:event_content_id, :region, :run_type], unique: true
+      t.index [:event_content_uid, :region, :run_type], unique: true
       t.index [:region, :start_at, :end_at]
     end
 

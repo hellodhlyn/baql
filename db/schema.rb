@@ -50,21 +50,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
   end
 
   create_table "event_content_schedules", force: :cascade do |t|
-    t.bigint "event_content_id", null: false
+    t.string "event_content_uid", null: false
     t.string "region", null: false
     t.string "run_type", null: false
     t.datetime "start_at", null: false
     t.datetime "end_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["event_content_id", "region", "run_type"], name: "idx_on_event_content_id_region_run_type_d1a563d994", unique: true
-    t.index ["event_content_id"], name: "index_event_content_schedules_on_event_content_id"
+    t.index ["event_content_uid", "region", "run_type"], name: "idx_on_event_content_uid_region_run_type_515a15f63c", unique: true
     t.index ["region", "start_at", "end_at"], name: "idx_on_region_start_at_end_at_636d06fff6"
   end
 
   create_table "event_contents", force: :cascade do |t|
     t.string "uid", null: false
     t.string "baql_id", null: false
+    t.jsonb "raw_data_first", null: false
+    t.jsonb "raw_data_rerun", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_event_contents_on_uid", unique: true
@@ -342,6 +343,4 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
     t.datetime "updated_at", null: false
     t.index ["key", "language"], name: "index_translations_on_key_and_language", unique: true
   end
-
-  add_foreign_key "event_content_schedules", "event_contents"
 end

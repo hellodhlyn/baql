@@ -44,6 +44,7 @@ module Types
     field :summary, String, null: true
     field :description, String, null: true
     field :tags, [String], null: false
+    field :event_index, Int, null: true
 
     field :rerun, Boolean, null: false
     field :endless, Boolean, null: false

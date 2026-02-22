@@ -1,7 +1,7 @@
 class EventContent < ApplicationRecord
   include Translatable
 
-  has_many :schedules, class_name: "EventContentSchedule", dependent: :destroy
+  has_many :schedules, class_name: "EventContentSchedule", foreign_key: :event_content_uid, primary_key: :uid
 
   validates :uid, presence: true, uniqueness: true
   validates :baql_id, presence: true
@@ -21,6 +21,8 @@ class EventContent < ApplicationRecord
   }.freeze
 
   translatable :name
+
+  KNOWN_REWARD_TYPES = %w[currency item equipment furniture].freeze
 
   def self.sync!
     # 이벤트 일정 동기화
@@ -71,7 +73,67 @@ class EventContent < ApplicationRecord
     baql_id
   end
 
+  def stages(run_type: "first")
+    raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
+    return [] unless raw
+
+    (raw["stage"] || {}).values.flat_map { |stage_list| stage_list.map { |s| normalize_stage(s) } }
+  end
+
+  def bonuses(run_type: "first")
+    raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
+    return [] unless raw
+
+    item_type_to_uid = (raw["currency"] || []).each_with_object({}) do |c, h|
+      h[c["EventContentItemType"]] = c["ItemUniqueId"].to_s
+    end
+
+    (raw["bonus"] || {}).flat_map do |student_uid, data|
+      item_types  = data["EventContentItemType"] || []
+      percentages = data["BonusPercentage"]      || []
+
+      item_types.zip(percentages).filter_map do |item_type, raw_percentage|
+        reward_uid = item_type_to_uid[item_type]
+        next unless reward_uid
+
+        {
+          "student_uid" => student_uid,
+          "reward_uid"  => reward_uid,
+          "reward_type" => "item",
+          "percentage"  => (BigDecimal(raw_percentage.to_s) / 10000).to_s("F"),
+        }
+      end
+    end
+  end
+
   private
+
+  def normalize_stage(s)
+    {
+      "uid"               => s["Id"].to_s,
+      "stage_number"      => s["StageNumber"].to_s,
+      "enter_cost_type"   => s["StageEnterCostTypeStr"]&.downcase,
+      "enter_cost_uid"    => s["StageEnterCostId"]&.to_s,
+      "enter_cost_amount" => s["StageEnterCostAmount"],
+      "rewards"           => normalize_rewards(s["EventContentStageReward"] || []),
+    }
+  end
+
+  def normalize_rewards(raw_rewards)
+    raw_rewards
+      .select { |r| KNOWN_REWARD_TYPES.include?(r["RewardParcelTypeStr"]&.downcase) }
+      .map    { |r| normalize_reward(r) }
+  end
+
+  def normalize_reward(r)
+    {
+      "reward_uid"  => r["RewardId"].to_s,
+      "reward_type" => r["RewardParcelTypeStr"].downcase,
+      "amount"      => r["RewardAmount"],
+      "probability" => (BigDecimal(r["RewardProb"].to_s) / 10000).to_s("F"),
+      "tag"         => r["RewardTagStr"],
+    }
+  end
 
   def self.timestamp_to_datetime(timestamp)
     return nil if timestamp.nil? || timestamp >= 4102412400
