@@ -1,4 +1,6 @@
 class EventContent < ApplicationRecord
+  include Translatable
+
   has_many :schedules, class_name: "EventContentSchedule", dependent: :destroy
 
   validates :uid, presence: true, uniqueness: true
@@ -18,11 +20,7 @@ class EventContent < ApplicationRecord
     "Cn"     => "cn"
   }.freeze
 
-  LANGUAGE_MAP = {
-    "jp" => "ja",
-    "kr" => "ko",
-    "en" => "en"
-  }.freeze
+  translatable :name
 
   def self.sync!
     # 이벤트 일정 동기화
@@ -57,7 +55,7 @@ class EventContent < ApplicationRecord
     end
 
     # 이벤트 이름 번역 동기화
-    LANGUAGE_MAP.each do |data_path, lang|
+    Constants::LANGUAGE_MAP.each do |data_path, lang|
       localization_data = SchaleDB::V1::Data.localization(data_path)
       event_names = localization_data["EventName"] || {}
       event_names.each do |event_id, name|
@@ -69,12 +67,8 @@ class EventContent < ApplicationRecord
     nil
   end
 
-  def name(lang = Constants::DEFAULT_LANGUAGE)
-    Translation.find_by(key: "#{baql_id}::name", language: lang)&.value
-  end
-
-  def set_name(value, lang = Constants::DEFAULT_LANGUAGE)
-    Translation.find_or_initialize_by(key: "#{baql_id}::name", language: lang).update!(value: value)
+  def translation_key_prefix
+    baql_id
   end
 
   private

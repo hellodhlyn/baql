@@ -27,6 +27,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
     t.index ["uid"], name: "index_campaigns_on_uid", unique: true
   end
 
+  create_table "currencies", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.integer "rarity", null: false
+    t.jsonb "raw_data", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_currencies_on_uid", unique: true
+  end
+
+  create_table "equipments", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "category", null: false
+    t.string "sub_category"
+    t.integer "rarity", null: false
+    t.jsonb "raw_data", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_equipments_on_uid", unique: true
+  end
+
   create_table "event_content_schedules", force: :cascade do |t|
     t.bigint "event_content_id", null: false
     t.string "region", null: false
@@ -123,14 +145,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
     t.index ["uid"], name: "index_events_on_uid", unique: true
   end
 
+  create_table "furnitures", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "category", null: false
+    t.string "sub_category"
+    t.integer "rarity", null: false
+    t.string "tags", default: [], null: false, array: true
+    t.jsonb "raw_data", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_furnitures_on_uid", unique: true
+  end
+
   create_table "items", force: :cascade do |t|
     t.string "uid", null: false
-    t.string "name", null: false
     t.string "category", null: false
     t.string "sub_category"
     t.integer "rarity", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "baql_id", default: "", null: false
+    t.jsonb "raw_data", default: {}, null: false
     t.index ["uid"], name: "index_items_on_uid", unique: true
   end
 

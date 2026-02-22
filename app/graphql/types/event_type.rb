@@ -64,8 +64,6 @@ module Types
       object.recruitments.sort_by(&:id)
     end
 
-    field :legacy_stages, [LegacyStageType], null: false, deprecation_reason: "Use `stages` instead"
-
     field :stages, [EventStageType], null: false do
       argument :difficulty, Int, required: false
     end

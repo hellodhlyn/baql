@@ -5,4 +5,10 @@ module Constants
   DEFAULT_LANGUAGE = "ko"
 
   EVENT_SCHEDULE_RUN_TYPES = ["first", "rerun", "permanent"]
+
+  LANGUAGE_MAP = {
+    "jp" => "ja",
+    "kr" => "ko",
+    "en" => "en"
+  }.freeze
 end
