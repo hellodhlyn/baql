@@ -106,7 +106,32 @@ class EventContent < ApplicationRecord
     end
   end
 
+  def shop_resources(run_type: "first")
+    raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
+    return [] unless raw
+
+    (raw["shop"] || {}).values.flat_map do |item_list|
+      item_list.filter_map { |item| normalize_shop_item(item) }
+    end
+  end
+
   private
+
+  def normalize_shop_item(item)
+    goods = item["Goods"]&.first
+    return nil unless goods
+
+    {
+      "uid"                     => item["Id"].to_s,
+      "resource_type"           => goods["ParcelTypeStr"]&.first&.downcase,
+      "resource_uid"            => goods["ParcelId"]&.first&.to_s,
+      "resource_amount"         => goods["ParcelAmount"]&.first,
+      "payment_resource_type"   => goods["ConsumeParcelTypeStr"]&.first&.downcase,
+      "payment_resource_uid"    => goods["ConsumeParcelId"]&.first&.to_s,
+      "payment_resource_amount" => goods["ConsumeParcelAmount"]&.first,
+      "shop_amount"             => item["PurchaseCountLimit"]&.then { |n| n > 0 ? n : nil },
+    }
+  end
 
   def normalize_stage(s)
     {

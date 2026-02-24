@@ -42,6 +42,29 @@ module Types
     end
   end
 
+  class EventContentShopResourceType < Types::Base::Object
+    field :uid,                      String,             null: false
+    field :resource,                 Types::ResourceType, null: true
+    field :resource_amount,          Int,                null: false
+    field :payment_resource,         Types::ResourceType, null: true
+    field :payment_resource_amount,  Int,                null: false
+    field :shop_amount,              Int,                null: true
+
+    def resource
+      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
+      return nil unless klass_proc && object["resource_uid"]
+
+      klass_proc.call.find_by(uid: object["resource_uid"])
+    end
+
+    def payment_resource
+      klass_proc = RESOURCE_CLASS_MAP[object["payment_resource_type"]]
+      return nil unless klass_proc && object["payment_resource_uid"]
+
+      klass_proc.call.find_by(uid: object["payment_resource_uid"])
+    end
+  end
+
   class EventContentBonusType < Types::Base::Object
     field :student,    Types::StudentType, null: true
     field :resource,   Types::ResourceType, null: true
@@ -86,6 +109,13 @@ module Types
     end
     def bonuses(run_type:)
       object.bonuses(run_type: run_type)
+    end
+
+    field :shop_resources, [Types::EventContentShopResourceType], null: false do
+      argument :run_type, RunTypeEnum, required: true
+    end
+    def shop_resources(run_type:)
+      object.shop_resources(run_type: run_type)
     end
   end
 end

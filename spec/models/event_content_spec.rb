@@ -1,6 +1,176 @@
 require "rails_helper"
 
 RSpec.describe EventContent, type: :model do
+  # ──────────────────────────────────────────────────────────────
+  # #shop_resources
+  # ──────────────────────────────────────────────────────────────
+  describe "#shop_resources" do
+    let(:shop_item_item) do
+      {
+        "CategoryType" => 13,
+        "Id"           => 8500000,
+        "IsLegacy"     => false,
+        "PurchaseCountLimit" => 90,
+        "GoodsId" => [44500],
+        "Goods" => [
+          {
+            "ParcelId"              => [10],
+            "ParcelAmount"          => [3],
+            "ParcelTypeStr"         => ["Item"],
+            "ConsumeParcelId"       => [80681],
+            "ConsumeParcelAmount"   => [1],
+            "ConsumeParcelTypeStr"  => ["Item"],
+          }
+        ]
+      }
+    end
+
+    let(:shop_item_equipment) do
+      {
+        "CategoryType" => 14,
+        "Id"           => 8500100,
+        "IsLegacy"     => false,
+        "PurchaseCountLimit" => 0,
+        "GoodsId" => [44600],
+        "Goods" => [
+          {
+            "ParcelId"              => [1],
+            "ParcelAmount"          => [1],
+            "ParcelTypeStr"         => ["Equipment"],
+            "ConsumeParcelId"       => [80682],
+            "ConsumeParcelAmount"   => [5],
+            "ConsumeParcelTypeStr"  => ["Item"],
+          }
+        ]
+      }
+    end
+
+    let(:shop_item_furniture) do
+      {
+        "CategoryType" => 13,
+        "Id"           => 8500200,
+        "IsLegacy"     => false,
+        "PurchaseCountLimit" => 1,
+        "GoodsId" => [44700],
+        "Goods" => [
+          {
+            "ParcelId"              => [210381],
+            "ParcelAmount"          => [1],
+            "ParcelTypeStr"         => ["Furniture"],
+            "ConsumeParcelId"       => [80681],
+            "ConsumeParcelAmount"   => [80],
+            "ConsumeParcelTypeStr"  => ["Item"],
+          }
+        ]
+      }
+    end
+
+    let(:raw_data) do
+      {
+        "shop" => {
+          "13" => [shop_item_item, shop_item_furniture],
+          "14" => [shop_item_equipment],
+        }
+      }
+    end
+
+    subject(:event_content) { EventContent.new(uid: "850", baql_id: "baql::events::850", raw_data_first: raw_data) }
+
+    context "when raw_data_first is nil" do
+      subject { EventContent.new(uid: "850", baql_id: "baql::events::850") }
+
+      it "returns an empty array" do
+        expect(subject.shop_resources).to eq([])
+      end
+    end
+
+    context "when the shop key is absent" do
+      subject { EventContent.new(uid: "850", baql_id: "baql::events::850", raw_data_first: {}) }
+
+      it "returns an empty array" do
+        expect(subject.shop_resources).to eq([])
+      end
+    end
+
+    context "when run_type is the default (first)" do
+      it "parses raw_data_first" do
+        expect(event_content.shop_resources.count).to eq(3)
+      end
+    end
+
+    context "when run_type is 'rerun'" do
+      let(:rerun_raw) { { "shop" => { "13" => [shop_item_item] } } }
+      subject { EventContent.new(uid: "850", baql_id: "baql::events::850", raw_data_first: raw_data, raw_data_rerun: rerun_raw) }
+
+      it "parses raw_data_rerun" do
+        expect(subject.shop_resources(run_type: "rerun").count).to eq(1)
+      end
+    end
+
+    describe "field mapping" do
+      it "normalizes all fields correctly" do
+        item = event_content.shop_resources.find { |r| r["uid"] == "8500000" }
+
+        expect(item["uid"]).to eq("8500000")
+        expect(item["resource_type"]).to eq("item")
+        expect(item["resource_uid"]).to eq("10")
+        expect(item["resource_amount"]).to eq(3)
+        expect(item["payment_resource_type"]).to eq("item")
+        expect(item["payment_resource_uid"]).to eq("80681")
+        expect(item["payment_resource_amount"]).to eq(1)
+      end
+    end
+
+    describe "shop_amount" do
+      it "returns the limit when PurchaseCountLimit > 0" do
+        item = event_content.shop_resources.find { |r| r["uid"] == "8500000" }
+        expect(item["shop_amount"]).to eq(90)
+      end
+
+      it "returns nil when PurchaseCountLimit is 0 (unlimited)" do
+        item = event_content.shop_resources.find { |r| r["uid"] == "8500100" }
+        expect(item["shop_amount"]).to be_nil
+      end
+    end
+
+    describe "resource_type variety" do
+      it "parses Equipment type correctly" do
+        item = event_content.shop_resources.find { |r| r["uid"] == "8500100" }
+        expect(item["resource_type"]).to eq("equipment")
+        expect(item["resource_uid"]).to eq("1")
+      end
+
+      it "parses Furniture type correctly" do
+        item = event_content.shop_resources.find { |r| r["uid"] == "8500200" }
+        expect(item["resource_type"]).to eq("furniture")
+        expect(item["resource_uid"]).to eq("210381")
+      end
+    end
+
+    it "flattens items from all categories into a single array" do
+      uids = event_content.shop_resources.map { |r| r["uid"] }
+      expect(uids).to contain_exactly("8500000", "8500100", "8500200")
+    end
+
+    context "when an item has no Goods" do
+      let(:raw_data) do
+        {
+          "shop" => {
+            "13" => [
+              shop_item_item,
+              { "Id" => 9999999, "PurchaseCountLimit" => 1, "Goods" => [] }
+            ]
+          }
+        }
+      end
+
+      it "skips the item with no Goods" do
+        expect(event_content.shop_resources.map { |r| r["uid"] }).to contain_exactly("8500000")
+      end
+    end
+  end
+
+
   LOCALIZATION_STUBS = {
     "jp" => { "EventName" => { "701" => "特殊作戦・デカグラマトン編", "801" => "桜花爛漫お祭り騒ぎ！" } }.to_json,
     "kr" => { "EventName" => { "701" => "특수 작전 데카그라마톤 편", "801" => "벚꽃만발 축제대소동!" } }.to_json,
