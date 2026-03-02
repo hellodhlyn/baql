@@ -1,5 +1,6 @@
 class EventContent < ApplicationRecord
   include Translatable
+  include EventMinigameable
 
   has_many :schedules, class_name: "EventContentSchedule", foreign_key: :event_content_uid, primary_key: :uid
 

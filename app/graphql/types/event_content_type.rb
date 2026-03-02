@@ -6,6 +6,55 @@ module Types
     "furniture" => -> { ::Furniture },
   }.freeze
 
+  class EventMinigamePaymentType < Types::Base::Object
+    field :resource, Types::ResourceInterface, null: true
+    field :quantity, Int, null: false
+
+    def resource
+      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
+      return nil unless klass_proc && object["resource_uid"]
+
+      klass_proc.call.find_by(uid: object["resource_uid"])
+    end
+  end
+
+  class EventMinigameRewardItemType < Types::Base::Object
+    field :resource, Types::ResourceInterface, null: true
+    field :quantity, Float, null: false
+
+    def resource
+      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
+      return nil unless klass_proc && object["resource_uid"]
+
+      klass_proc.call.find_by(uid: object["resource_uid"])
+    end
+  end
+
+  # 슬롯 조건 타입:
+  #   subsequent — 모든 슬롯에 적용
+  #   modulo     — slot % divisor in remainders
+  #   exact      — slot in values
+  #   lte        — slot <= value
+  #   gte        — slot >= value
+  class EventMinigameSlotConditionType < Types::Base::Object
+    field :type,       String, null: false
+    field :divisor,    Int,    null: true
+    field :remainders, [Int],  null: true
+    field :values,     [Int],  null: true
+    field :value,      Int,    null: true
+  end
+
+  class EventMinigameRewardGroupType < Types::Base::Object
+    field :condition, Types::EventMinigameSlotConditionType, null: false
+    field :rewards,   [Types::EventMinigameRewardItemType],  null: false
+  end
+
+  class EventMinigameConfigType < Types::Base::Object
+    field :minigame_type,  String,                                null: false
+    field :payment,        Types::EventMinigamePaymentType,       null: false
+    field :reward_groups,  [Types::EventMinigameRewardGroupType], null: false
+  end
+
   class EventContentScheduleType < Types::Base::Object
     field :region,   String, null: false
     field :run_type, String, null: false
@@ -118,6 +167,13 @@ module Types
     end
     def shop_resources(run_type:)
       object.shop_resources(run_type: run_type)
+    end
+
+    field :minigame_configs, [Types::EventMinigameConfigType], null: false do
+      argument :run_type, RunTypeEnum, required: true
+    end
+    def minigame_configs(run_type:)
+      object.minigame_configs(run_type: run_type)
     end
   end
 end
