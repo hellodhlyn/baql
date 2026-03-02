@@ -1,3 +1,4 @@
+# DEPRECATED: Use the standalone Equipment model instead.
 class Resources::Equipment < Resource
   include ImageSyncable
 

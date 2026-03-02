@@ -1,3 +1,4 @@
+# DEPRECATED: Use the standalone Item model instead.
 class Resources::Item < Resource
   include ImageSyncable
 

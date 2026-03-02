@@ -1,3 +1,4 @@
+# DEPRECATED: Use the standalone Currency model instead.
 class Resources::Currency < Resource
   include ImageSyncable
 

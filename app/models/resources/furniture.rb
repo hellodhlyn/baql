@@ -1,3 +1,4 @@
+# DEPRECATED: Use the standalone Furniture model instead.
 class Resources::Furniture < Resource
   include ImageSyncable
 

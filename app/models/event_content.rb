@@ -77,7 +77,20 @@ class EventContent < ApplicationRecord
     raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
     return [] unless raw
 
-    (raw["stage"] || {}).values.flat_map { |stage_list| stage_list.map { |s| normalize_stage(s) } }
+    (raw["stage"] || {}).flat_map do |stage_type, stage_list|
+      stage_list.each_with_index.map do |s, index|
+         {
+          "uid"               => s["Id"].to_s,
+          "stage_type"        => stage_type,
+          "stage_index"       => index,
+          "stage_number"      => s["StageNumber"].to_s,
+          "enter_cost_type"   => s["StageEnterCostTypeStr"]&.downcase,
+          "enter_cost_uid"    => s["StageEnterCostId"]&.to_s,
+          "enter_cost_amount" => s["StageEnterCostAmount"],
+          "rewards"           => normalize_rewards(s["EventContentStageReward"] || []),
+        }
+      end
+    end
   end
 
   def bonuses(run_type: "first")
@@ -100,7 +113,7 @@ class EventContent < ApplicationRecord
           "student_uid" => student_uid,
           "reward_uid"  => reward_uid,
           "reward_type" => "item",
-          "percentage"  => (BigDecimal(raw_percentage.to_s) / 10000).to_s("F"),
+          "percentage"  => (BigDecimal(raw_percentage.to_s) / 10000),
         }
       end
     end
@@ -130,17 +143,6 @@ class EventContent < ApplicationRecord
       "payment_resource_uid"    => goods["ConsumeParcelId"]&.first&.to_s,
       "payment_resource_amount" => goods["ConsumeParcelAmount"]&.first,
       "shop_amount"             => item["PurchaseCountLimit"]&.then { |n| n > 0 ? n : nil },
-    }
-  end
-
-  def normalize_stage(s)
-    {
-      "uid"               => s["Id"].to_s,
-      "stage_number"      => s["StageNumber"].to_s,
-      "enter_cost_type"   => s["StageEnterCostTypeStr"]&.downcase,
-      "enter_cost_uid"    => s["StageEnterCostId"]&.to_s,
-      "enter_cost_amount" => s["StageEnterCostAmount"],
-      "rewards"           => normalize_rewards(s["EventContentStageReward"] || []),
     }
   end
 

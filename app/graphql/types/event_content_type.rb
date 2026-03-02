@@ -1,9 +1,9 @@
 module Types
   RESOURCE_CLASS_MAP = {
-    "currency"  => -> { Resources::Currency },
-    "item"      => -> { Resources::Item },
-    "equipment" => -> { Resources::Equipment },
-    "furniture" => -> { Resources::Furniture },
+    "currency"  => -> { ::Currency },
+    "item"      => -> { ::Item },
+    "equipment" => -> { ::Equipment },
+    "furniture" => -> { ::Furniture },
   }.freeze
 
   class EventContentScheduleType < Types::Base::Object
@@ -14,7 +14,7 @@ module Types
   end
 
   class EventContentStageRewardType < Types::Base::Object
-    field :resource,    Types::ResourceType, null: true
+    field :resource,    Types::ResourceInterface, null: true
     field :amount,      Int,    null: false
     field :probability, String, null: false
     field :tag,         String, null: false
@@ -29,8 +29,10 @@ module Types
 
   class EventContentStageType < Types::Base::Object
     field :uid,                 String,  null: false
+    field :stage_index,         Int,     null: false
+    field :stage_type,          String,  null: false
     field :stage_number,        String,  null: false
-    field :enter_cost_resource, Types::ResourceType, null: true
+    field :enter_cost_resource, Types::ResourceInterface, null: true
     field :enter_cost_amount,   Int,     null: false
     field :rewards, [Types::EventContentStageRewardType], null: false
 
@@ -43,12 +45,12 @@ module Types
   end
 
   class EventContentShopResourceType < Types::Base::Object
-    field :uid,                      String,             null: false
-    field :resource,                 Types::ResourceType, null: true
-    field :resource_amount,          Int,                null: false
-    field :payment_resource,         Types::ResourceType, null: true
-    field :payment_resource_amount,  Int,                null: false
-    field :shop_amount,              Int,                null: true
+    field :uid,                      String,                   null: false
+    field :resource,                 Types::ResourceInterface, null: true
+    field :resource_amount,          Int,                      null: false
+    field :payment_resource,         Types::ResourceInterface, null: true
+    field :payment_resource_amount,  Int,                      null: false
+    field :shop_amount,              Int,                      null: true
 
     def resource
       klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
@@ -67,7 +69,7 @@ module Types
 
   class EventContentBonusType < Types::Base::Object
     field :student,    Types::StudentType, null: true
-    field :resource,   Types::ResourceType, null: true
+    field :resource,   Types::ResourceInterface, null: true
     field :percentage, String, null: false
 
     def student
