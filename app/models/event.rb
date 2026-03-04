@@ -14,7 +14,6 @@ class Event < ApplicationRecord
   alias_method :recruitments, :pickups
 
   has_many :stages, class_name: "EventStage", primary_key: :uid, foreign_key: :event_uid
-  has_many :shop_resources, class_name: "EventShopResource", primary_key: :uid, foreign_key: :event_uid
 
   scope :ongoing, -> { where("since <= ? AND until >= ?", Time.zone.now, Time.zone.now) }
   scope :upcoming, -> { where("since > ?", Time.zone.now) }

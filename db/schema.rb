@@ -10,22 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_04_152338) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
-
-  create_table "campaigns", force: :cascade do |t|
-    t.string "uid", null: false
-    t.string "content_type", null: false
-    t.string "region", null: false
-    t.integer "drop_rate", null: false
-    t.datetime "since", null: false
-    t.datetime "until", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["since"], name: "index_campaigns_on_since"
-    t.index ["uid"], name: "index_campaigns_on_uid", unique: true
-  end
 
   create_table "currencies", force: :cascade do |t|
     t.string "uid", null: false
@@ -35,6 +22,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_currencies_on_uid", unique: true
+  end
+
+  create_table "deprecated_event_shop_resources", force: :cascade do |t|
+    t.string "event_uid", null: false
+    t.string "uid", null: false
+    t.string "resource_type", null: false
+    t.string "resource_uid", null: false
+    t.integer "resource_amount", null: false
+    t.string "payment_resource_type", null: false
+    t.string "payment_resource_uid", null: false
+    t.integer "payment_resource_amount", null: false
+    t.integer "shop_amount"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_uid"], name: "index_deprecated_event_shop_resources_on_event_uid"
   end
 
   create_table "equipments", force: :cascade do |t|
@@ -69,21 +71,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_event_contents_on_uid", unique: true
-  end
-
-  create_table "event_shop_resources", force: :cascade do |t|
-    t.string "event_uid", null: false
-    t.string "uid", null: false
-    t.string "resource_type", null: false
-    t.string "resource_uid", null: false
-    t.integer "resource_amount", null: false
-    t.string "payment_resource_type", null: false
-    t.string "payment_resource_uid", null: false
-    t.integer "payment_resource_amount", null: false
-    t.integer "shop_amount"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["event_uid"], name: "index_event_shop_resources_on_event_uid"
   end
 
   create_table "event_stage_reward_bonuses", force: :cascade do |t|
@@ -169,49 +156,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_21_151120) do
     t.string "baql_id", default: "", null: false
     t.jsonb "raw_data", default: {}, null: false
     t.index ["uid"], name: "index_items_on_uid", unique: true
-  end
-
-  create_table "joint_firing_drills", force: :cascade do |t|
-    t.string "uid", null: false
-    t.string "region", null: false
-    t.string "drill_type", null: false
-    t.integer "season", null: false
-    t.datetime "since", null: false
-    t.datetime "until", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["since"], name: "index_joint_firing_drills_on_since"
-    t.index ["uid"], name: "index_joint_firing_drills_on_uid", unique: true
-  end
-
-  create_table "main_story_chapters", force: :cascade do |t|
-    t.string "uid", null: false
-    t.string "season", null: false
-    t.string "volume", null: false
-    t.integer "chapter", null: false
-    t.integer "episode_count", null: false
-    t.jsonb "volume_title", default: {}, null: false
-    t.jsonb "chapter_title", default: {}, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["season", "volume", "chapter"], name: "index_main_story_chapters_on_season_and_volume_and_chapter", unique: true
-    t.index ["uid"], name: "index_main_story_chapters_on_uid", unique: true
-  end
-
-  create_table "main_story_parts", force: :cascade do |t|
-    t.string "uid", null: false
-    t.string "chapter_uid", null: false
-    t.integer "part_index", null: false
-    t.jsonb "part_name", default: {}, null: false
-    t.string "image_url"
-    t.jsonb "videos", default: [], null: false
-    t.jsonb "release_at", default: {}, null: false
-    t.integer "first_episode_number"
-    t.integer "last_episode_number"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["chapter_uid"], name: "index_main_story_parts_on_chapter_uid"
-    t.index ["uid"], name: "index_main_story_parts_on_uid", unique: true
   end
 
   create_table "pickups", force: :cascade do |t|

@@ -88,9 +88,5 @@ module Types
       end
     end
 
-    field :shop_resources, [EventShopResourceType], null: false
-    def shop_resources
-      object.shop_resources.includes(:resource, :payment_resource).order(id: :asc)
-    end
   end
 end
