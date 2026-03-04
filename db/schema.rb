@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_04_152338) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_05_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -156,6 +156,51 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_04_152338) do
     t.string "baql_id", default: "", null: false
     t.jsonb "raw_data", default: {}, null: false
     t.index ["uid"], name: "index_items_on_uid", unique: true
+  end
+
+  create_table "main_story_chapters", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "volume_uid", null: false
+    t.integer "chapter_number", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_main_story_chapters_on_uid", unique: true
+    t.index ["volume_uid"], name: "index_main_story_chapters_on_volume_uid"
+  end
+
+  create_table "main_story_part_schedules", force: :cascade do |t|
+    t.string "part_uid", null: false
+    t.string "region", null: false
+    t.datetime "released_at", null: false
+    t.boolean "confirmed", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["part_uid", "region"], name: "index_main_story_part_schedules_on_part_uid_and_region", unique: true
+  end
+
+  create_table "main_story_parts", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "chapter_uid", null: false
+    t.integer "sort_order", null: false
+    t.integer "episode_start"
+    t.integer "episode_end"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chapter_uid"], name: "index_main_story_parts_on_chapter_uid"
+    t.index ["uid"], name: "index_main_story_parts_on_uid", unique: true
+  end
+
+  create_table "main_story_volumes", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.integer "sort_order", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "label"
+    t.index ["sort_order"], name: "index_main_story_volumes_on_sort_order"
+    t.index ["uid"], name: "index_main_story_volumes_on_uid", unique: true
   end
 
   create_table "pickups", force: :cascade do |t|

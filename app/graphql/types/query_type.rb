@@ -11,5 +11,6 @@ module Types
     field :student, resolver: Queries::StudentQuery
     field :students, resolver: Queries::StudentsQuery
     field :items, resolver: Queries::ItemsQuery
+    field :main_stories, resolver: Queries::MainStoriesQuery
   end
 end
