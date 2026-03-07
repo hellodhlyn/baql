@@ -5,6 +5,7 @@ class CreateRecruitmentGroupsAndRecruitments < ActiveRecord::Migration[8.0]
       t.string :baql_id, null: false
       t.string :content_type
       t.string :content_uid
+      t.string :recruitment_type, null: false
       t.datetime :start_at, null: false
       t.datetime :end_at
       t.timestamps

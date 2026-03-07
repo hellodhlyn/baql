@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_07_213616) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_08_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -239,6 +239,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_213616) do
     t.index ["uid"], name: "index_main_story_volumes_on_uid", unique: true
   end
 
+  create_table "mini_event_content_schedules", force: :cascade do |t|
+    t.string "mini_event_content_uid", null: false
+    t.string "region", null: false
+    t.integer "occurrence", null: false
+    t.datetime "start_at", null: false
+    t.datetime "end_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["mini_event_content_uid", "region", "occurrence"], name: "index_mini_event_content_schedules_unique", unique: true
+    t.index ["region", "start_at", "end_at"], name: "idx_on_region_start_at_end_at_dbdc045b92"
+  end
+
+  create_table "mini_event_contents", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_mini_event_contents_on_uid", unique: true
+  end
+
   create_table "pickups", force: :cascade do |t|
     t.string "student_uid"
     t.string "fallback_student_name", null: false
@@ -311,6 +331,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_213616) do
     t.datetime "end_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "recruitment_type", null: false
     t.index ["content_type", "content_uid"], name: "index_recruitment_groups_on_content_type_and_content_uid"
     t.index ["uid"], name: "index_recruitment_groups_on_uid", unique: true
   end

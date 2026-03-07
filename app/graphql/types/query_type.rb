@@ -16,5 +16,8 @@ module Types
     field :campaign,             resolver: Queries::CampaignQuery
     field :campaigns,            resolver: Queries::CampaignsQuery
     field :joint_firing_drill,   resolver: Queries::JointFiringDrillQuery
+    field :joint_firing_drills,  resolver: Queries::JointFiringDrillsQuery
+    field :mini_event_content,   resolver: Queries::MiniEventContentQuery
+    field :mini_event_contents,  resolver: Queries::MiniEventContentsQuery
   end
 end

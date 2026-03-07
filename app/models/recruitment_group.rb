@@ -6,7 +6,8 @@ class RecruitmentGroup < ApplicationRecord
 
   validates :uid, presence: true, uniqueness: true
   validates :baql_id, presence: true
-  validates :content_type, inclusion: { in: CONTENT_TYPES }, allow_nil: true
+  validates :content_type,     inclusion: { in: CONTENT_TYPES },               allow_nil: true
+  validates :recruitment_type, presence: true, inclusion: { in: Recruitment::RECRUITMENT_TYPES }
 
   def content
     case content_type
