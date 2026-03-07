@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_07_054519) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_07_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -156,6 +156,30 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_054519) do
     t.string "baql_id", default: "", null: false
     t.jsonb "raw_data", default: {}, null: false
     t.index ["uid"], name: "index_items_on_uid", unique: true
+  end
+
+  create_table "joint_firing_drill_schedules", force: :cascade do |t|
+    t.string "drill_uid", null: false
+    t.string "region", null: false
+    t.datetime "start_at", null: false
+    t.datetime "end_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["drill_uid", "region"], name: "index_joint_firing_drill_schedules_on_drill_uid_and_region", unique: true
+    t.index ["drill_uid"], name: "index_joint_firing_drill_schedules_on_drill_uid"
+  end
+
+  create_table "joint_firing_drills", force: :cascade do |t|
+    t.string "uid", null: false
+    t.integer "season", null: false
+    t.string "drill_type", null: false
+    t.string "terrain", null: false
+    t.string "defense_type", null: false
+    t.boolean "confirmed", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["season"], name: "index_joint_firing_drills_on_season", unique: true
+    t.index ["uid"], name: "index_joint_firing_drills_on_uid", unique: true
   end
 
   create_table "main_story_chapters", force: :cascade do |t|
@@ -361,4 +385,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_054519) do
     t.datetime "updated_at", null: false
     t.index ["key", "language"], name: "index_translations_on_key_and_language", unique: true
   end
+
+  add_foreign_key "joint_firing_drill_schedules", "joint_firing_drills", column: "drill_uid", primary_key: "uid"
 end

@@ -9,12 +9,6 @@ module Types
       end
     end
 
-    class TerrainEnum < Types::Base::Enum
-      Raid::TERRAINS.each do |type|
-        value type, value: type
-      end
-    end
-
     class DefenseTypeAndDifficulty < Types::Base::Object
       field :defense_type, Types::Enums::DefenseType, null: false
       field :difficulty, Types::Enums::DifficultyType, null: true
@@ -23,7 +17,7 @@ module Types
     field :type, RaidTypeEnum, null: false
     field :name, String, null: false
     field :boss, String, null: false
-    field :terrain, TerrainEnum, null: false
+    field :terrain, Types::Enums::TerrainType, null: false
     field :attack_type, Types::Enums::AttackType, null: false
     field :defense_types, [DefenseTypeAndDifficulty], null: false
     field :raid_index_jp, Integer, null: true

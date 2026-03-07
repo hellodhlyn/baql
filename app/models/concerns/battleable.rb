@@ -4,5 +4,6 @@ module Battleable
   included do
     ATTACK_TYPES  = ["explosive", "piercing", "mystic", "sonic", "chemical"]
     DEFENSE_TYPES = ["light", "heavy", "special", "elastic", "composite"]
+    TERRAINS      = ["outdoor", "indoor", "street"]
   end
 end

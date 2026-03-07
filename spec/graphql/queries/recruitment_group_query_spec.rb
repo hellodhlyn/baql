@@ -1,10 +1,10 @@
 require "rails_helper"
 
 RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
-  def query(content_uid)
+  def query(uid)
     <<~GRAPHQL
       query {
-        recruitmentGroup(contentUid: "#{content_uid}") {
+        recruitmentGroup(uid: "#{uid}") {
           uid
           startAt
           endAt
@@ -21,7 +21,7 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
     GRAPHQL
   end
 
-  describe "find by content_uid" do
+  describe "find by uid" do
     let!(:group) do
       FactoryBot.create(:recruitment_group,
         uid: "some-event",
@@ -34,7 +34,7 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
     end
 
     it "returns the matching group" do
-      result = execute_graphql(query("834"))
+      result = execute_graphql(query("some-event"))
       data = result["data"]["recruitmentGroup"]
       expect(data["uid"]).to eq("some-event")
       expect(data["contentType"]).to eq("event_content")
@@ -42,7 +42,7 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
     end
 
     it "returns recruitments" do
-      result = execute_graphql(query("834"))
+      result = execute_graphql(query("some-event"))
       recruitments = result["data"]["recruitmentGroup"]["recruitments"]
       expect(recruitments).to contain_exactly(
         a_hash_including("studentName" => "카요코", "recruitmentType" => "limited", "pickup" => true)
@@ -50,15 +50,15 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
     end
   end
 
-  describe "when no group exists for content_uid" do
+  describe "when no group exists for uid" do
     it "returns null" do
-      result = execute_graphql(query("9999"))
+      result = execute_graphql(query("nonexistent"))
       expect(result["data"]["recruitmentGroup"]).to be_nil
     end
   end
 
   describe "studentName resolution" do
-    let(:group) { FactoryBot.create(:recruitment_group, content_type: "event_content", content_uid: "835") }
+    let(:group) { FactoryBot.create(:recruitment_group, uid: "some-event-2", content_type: "event_content", content_uid: "835") }
 
     context "when student is linked" do
       before do
@@ -67,7 +67,7 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
       end
 
       it "returns the student's current name" do
-        result = execute_graphql(query("835"))
+        result = execute_graphql(query("some-event-2"))
         student_name = result["data"]["recruitmentGroup"]["recruitments"].first["studentName"]
         expect(student_name).to eq("카요코(최신)")
       end
@@ -79,7 +79,7 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
       end
 
       it "returns student_name" do
-        result = execute_graphql(query("835"))
+        result = execute_graphql(query("some-event-2"))
         student_name = result["data"]["recruitmentGroup"]["recruitments"].first["studentName"]
         expect(student_name).to eq("미공개학생")
       end

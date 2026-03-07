@@ -2,12 +2,12 @@ module Queries
   class RecruitmentGroupQuery < Queries::BaseQuery
     type Types::RecruitmentGroupType, null: true
 
-    argument :content_uid, String, required: true
+    argument :uid, String, required: true
 
-    def resolve(content_uid:)
+    def resolve(uid:)
       RecruitmentGroup
         .includes(:recruitments, recruitments: :student)
-        .find_by(content_uid: content_uid)
+        .find_by(uid: uid)
     end
   end
 end

@@ -12,6 +12,7 @@ module Types
     field :students, resolver: Queries::StudentsQuery
     field :items, resolver: Queries::ItemsQuery
     field :main_stories, resolver: Queries::MainStoriesQuery
-    field :recruitment_group, resolver: Queries::RecruitmentGroupQuery
+    field :recruitment_group,    resolver: Queries::RecruitmentGroupQuery
+    field :joint_firing_drill,   resolver: Queries::JointFiringDrillQuery
   end
 end
