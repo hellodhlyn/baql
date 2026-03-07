@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_07_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_07_213616) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "campaigns", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "region", null: false
+    t.string "category", default: [], null: false, array: true
+    t.integer "multiplier", null: false
+    t.datetime "start_at", null: false
+    t.datetime "end_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid", "region"], name: "index_campaigns_on_uid_and_region", unique: true
+  end
 
   create_table "currencies", force: :cascade do |t|
     t.string "uid", null: false
