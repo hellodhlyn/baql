@@ -62,7 +62,8 @@ module Types
 
     field :recruitments, [Types::RecruitmentType], null: false
     def recruitments
-      object.recruitments.sort_by(&:id)
+      group_uids = RecruitmentGroup.where("uid = ? OR uid LIKE ?", object.uid, "#{object.uid}-%").select(:uid)
+      Recruitment.where(recruitment_group_uid: group_uids).order(:id)
     end
 
     field :stages, [EventStageType], null: false do
