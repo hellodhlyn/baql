@@ -6,11 +6,12 @@ module Types
   end
 
   class RecruitmentType < Types::Base::Object
-    field :uid,              String,              null: false
-    field :recruitment_type, RecruitmentTypeEnum, null: false
-    field :pickup,           Boolean,             null: false
-    field :student_name,     String,              null: false
-    field :student,          "Types::StudentType", null: true
+    field :uid,               String,              null: false
+    field :recruitment_group, "Types::RecruitmentGroupType", null: false
+    field :recruitment_type,  RecruitmentTypeEnum, null: false
+    field :pickup,            Boolean,             null: false
+    field :student_name,      String,              null: false
+    field :student,           "Types::StudentType", null: true
 
     # backward compat: these live on RecruitmentGroup in v2
     field :since, GraphQL::Types::ISO8601DateTime, null: false

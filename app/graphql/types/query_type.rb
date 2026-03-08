@@ -13,6 +13,7 @@ module Types
     field :items, resolver: Queries::ItemsQuery
     field :main_stories, resolver: Queries::MainStoriesQuery
     field :recruitment_group,    resolver: Queries::RecruitmentGroupQuery
+    field :recruitment_groups,   resolver: Queries::RecruitmentGroupsQuery
     field :campaign,             resolver: Queries::CampaignQuery
     field :campaigns,            resolver: Queries::CampaignsQuery
     field :joint_firing_drill,   resolver: Queries::JointFiringDrillQuery
