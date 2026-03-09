@@ -12,10 +12,10 @@ module Types
     field :type, ResourceTypeEnum, null: false
     def type
       case object
-      when ::Item,      ::Resources::Item      then "item"
-      when ::Currency,  ::Resources::Currency  then "currency"
-      when ::Equipment, ::Resources::Equipment then "equipment"
-      when ::Furniture, ::Resources::Furniture then "furniture"
+      when ::Item      then "item"
+      when ::Currency  then "currency"
+      when ::Equipment then "equipment"
+      when ::Furniture then "furniture"
       else raise "Unexpected object: #{object}"
       end
     end
@@ -27,10 +27,10 @@ module Types
     definition_methods do
       def resolve_type(object, context)
         case object
-        when ::Item,      ::Resources::Item      then Types::ItemType
-        when ::Currency,  ::Resources::Currency  then Types::CurrencyType
-        when ::Equipment, ::Resources::Equipment then Types::EquipmentType
-        when ::Furniture, ::Resources::Furniture then Types::FurnitureType
+        when ::Item      then Types::ItemType
+        when ::Currency  then Types::CurrencyType
+        when ::Equipment then Types::EquipmentType
+        when ::Furniture then Types::FurnitureType
         else raise "Unexpected object: #{object}"
         end
       end

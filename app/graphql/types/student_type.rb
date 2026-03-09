@@ -21,11 +21,6 @@ module Types
     field :order, Int, null: false
     field :schale_db_id, String, null: true
 
-    field :pickups, [Types::PickupType], null: false
-    def pickups
-      Pickup.where(student_uid: object.uid).order(since: :asc)
-    end
-
     field :recruitments, [Types::RecruitmentType], null: false
     def recruitments
       Recruitment.includes(:recruitment_group).where(student_uid: object.uid).order(:id)

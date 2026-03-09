@@ -1,10 +1,6 @@
 class Student < ApplicationRecord
   include ImageSyncable
 
-  # @deprecated Use `recruitments` instead
-  has_many :pickups, primary_key: :uid, foreign_key: :student_uid
-  alias_method :recruitments, :pickups
-
   after_save :flush_cache
 
   scope :all_without_multiclass, -> { where("multiclass_uid is null or multiclass_uid = uid") }
@@ -42,14 +38,12 @@ class Student < ApplicationRecord
   end
 
   def self.sync!
-    pickup_student_names = Pickup.where(student_uid: nil).pluck(:fallback_student_name)
-    existing_item_uids = Resources::Item.pluck(:uid).to_set
+    existing_item_uids = Item.pluck(:uid).to_set
 
     SchaleDB::V1::Data.students.each do |uid, row|
       student = find_or_initialize_by(uid: uid)
       update_student_attributes(student, row)
       sync_skill_materials(student, row, existing_item_uids)
-      link_pickup_if_needed(student, pickup_student_names)
       log_and_sync_images_if_updated(student)
     end
 
@@ -131,13 +125,6 @@ class Student < ApplicationRecord
         ).update!(amount: amounts[index][item_index])
       end
     end
-  end
-
-  def self.link_pickup_if_needed(student, pickup_student_names)
-    return unless pickup_student_names.include?(student.name)
-
-    pickup = Pickup.find_by(student_uid: nil, fallback_student_name: student.name)
-    pickup&.update!(student_uid: student.uid)
   end
 
   def self.log_and_sync_images_if_updated(student)

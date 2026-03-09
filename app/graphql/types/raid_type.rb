@@ -1,7 +1,14 @@
 module Types
   class RaidType < Types::Base::Object
     implements GraphQL::Types::Relay::Node
-    implements Types::ContentInterface
+
+    field :uid, String, null: false
+    field :name, String, null: false
+    field :confirmed, Boolean, null: false
+    field :since, GraphQL::Types::ISO8601DateTime, null: false  # deprecated
+    field :until, GraphQL::Types::ISO8601DateTime, null: false  # deprecated
+    field :start_at, GraphQL::Types::ISO8601DateTime, null: false, method: :since
+    field :end_at, GraphQL::Types::ISO8601DateTime, null: false, method: :until
 
     class RaidTypeEnum < Types::Base::Enum
       Raid::RAID_TYPES.each do |type|
@@ -15,7 +22,6 @@ module Types
     end
 
     field :type, RaidTypeEnum, null: false
-    field :name, String, null: false
     field :boss, String, null: false
     field :terrain, Types::Enums::TerrainType, null: false
     field :attack_type, Types::Enums::AttackType, null: false

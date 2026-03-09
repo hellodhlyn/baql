@@ -5,7 +5,7 @@ module Queries
     argument :uids, [String], required: false
 
     def resolve(uids: [])
-      Resources::Item.where(uid: uids)
+      Item.where(uid: uids)
     end
   end
 end
