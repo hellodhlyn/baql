@@ -186,6 +186,8 @@ RSpec.describe EventContent, type: :model do
         stub_request(:get, "https://schaledb.com/data/#{lang_path}/localization.min.json")
           .to_return(body: body)
       end
+
+      allow(SchaleDB::V1::Images).to receive(:event_logo).and_return(nil)
     end
 
     subject { EventContent.sync! }

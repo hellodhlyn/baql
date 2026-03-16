@@ -1,6 +1,7 @@
 class EventContent < ApplicationRecord
   include Translatable
   include EventMinigameable
+  include ImageSyncable
 
   has_many :schedules, class_name: "EventContentSchedule", foreign_key: :event_content_uid, primary_key: :uid
 
@@ -14,6 +15,8 @@ class EventContent < ApplicationRecord
     "Rerun"     => "rerun",
     "Permanent" => "permanent"
   }.freeze
+
+  LOGO_LOCALES = %w[Jp Kr].freeze
 
   REGION_MAP = {
     "Jp"     => "jp",
@@ -34,6 +37,7 @@ class EventContent < ApplicationRecord
       event_id = event_data["Id"].to_s
       event_content = find_or_initialize_by(uid: event_id, baql_id: "#{BAQL_ID_PREFIX}#{event_id}")
       event_content.save!
+      sync_event_logos!(event_content)
 
       # Original, Rerun, Permanent 각각 처리
       RUN_TYPE_MAP.each do |run_type_key, run_type|
@@ -130,6 +134,16 @@ class EventContent < ApplicationRecord
   end
 
   private
+
+  def self.sync_event_logos!(event_content)
+    LOGO_LOCALES.each do |locale_suffix|
+      image_body = SchaleDB::V1::Images.event_logo(event_content.uid, locale_suffix)
+      next if image_body.blank?
+
+      key = "assets/images/events/logos/#{locale_suffix.downcase}/#{event_content.uid}"
+      sync_image!(key, image_body)
+    end
+  end
 
   def normalize_shop_item(item)
     goods = item["Goods"]&.first

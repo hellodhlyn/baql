@@ -2,7 +2,8 @@
 
 module Types
   class QueryType < Types::Base::Object
-    field :event_content, resolver: Queries::EventContentQuery
+    field :event_content,  resolver: Queries::EventContentQuery
+    field :event_contents, resolver: Queries::EventContentsQuery
     field :raid, resolver: Queries::RaidQuery
     field :raids, resolver: Queries::RaidsQuery
     field :student, resolver: Queries::StudentQuery
