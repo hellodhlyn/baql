@@ -1,4 +1,6 @@
 module Types
+  # DEPRECATED: Use Types::ResourceInterface and the individual types
+  # (Types::ItemType, Types::CurrencyType, Types::EquipmentType, Types::FurnitureType) instead.
   class ResourceType < Types::Base::Object
     class ResourceTypeEnum < Types::Base::Enum
       value "item", value: "item"

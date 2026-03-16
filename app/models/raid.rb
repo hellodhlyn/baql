@@ -3,8 +3,7 @@ class Raid < ApplicationRecord
 
   self.inheritance_column = :_type_disabled
 
-  RAID_TYPES   = ["total_assault", "elimination", "unlimit"]
-  TERRAINS     = ["indoor", "outdoor", "street"]
+  RAID_TYPES   = ["total_assault", "elimination", "unlimit", "allied"]
   DIFFICULTIES = ["normal", "hard", "very_hard", "hardcore", "extreme", "insane", "torment", "lunatic"]
 
   validates :type, inclusion: { in: RAID_TYPES }

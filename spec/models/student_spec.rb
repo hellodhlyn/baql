@@ -56,22 +56,6 @@ RSpec.describe Student, type: :model do
       end
     end
 
-    context "when pickup data without student_uid exists" do
-      before do
-        FactoryBot.create(:pickup, student_uid: nil, fallback_student_name: "카요코")
-        FactoryBot.create(:pickup, student_uid: nil, fallback_student_name: "카즈사")
-      end
-
-      it "updates the pickup data with the student_uid" do
-        expect { subject }
-          .to change { Pickup.find_by(fallback_student_name: "카요코").student_uid }
-          .from(nil).to("13005")
-
-        expect { subject }
-          .not_to change { Pickup.find_by(fallback_student_name: "카즈사").student_uid }
-      end
-    end
-
     context "when the skill material data does not exist" do
       it "create skill item data" do
         expect { subject }.to change { StudentSkillItem.count }.by(3)

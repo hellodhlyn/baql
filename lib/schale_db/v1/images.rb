@@ -26,13 +26,20 @@ module SchaleDB::V1
       get("images/item/icon/#{currency_id}.webp")
     end
 
+    def self.event_logo(event_uid, locale_suffix)
+      get("images/eventlogo/#{event_uid}_#{locale_suffix}.webp")
+    end
+
     private
 
     def self.get(path)
       address = "#{HOST}/#{path}"
       Rails.logger.info("[SchaleDB::V1::Images] GET #{address}")
       uri = URI(address)
-      Net::HTTP.get(uri)
+      response = Net::HTTP.get_response(uri)
+      return nil unless response.is_a?(Net::HTTPSuccess)
+
+      response.body
     end
   end
 end

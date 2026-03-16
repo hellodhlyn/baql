@@ -3,6 +3,8 @@
 class BaqlSchema < GraphQL::Schema
   query(Types::QueryType)
 
+  orphan_types Types::CurrencyType, Types::EquipmentType, Types::FurnitureType
+
   # For batch-loading (see https://graphql-ruby.org/dataloader/overview.html)
   use GraphQL::Dataloader
   trace_with GraphQL::Tracing::NewRelicTrace, set_transaction_name: true
