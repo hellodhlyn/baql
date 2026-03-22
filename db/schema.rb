@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_08_120001) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_16_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -271,6 +271,40 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_08_120001) do
     t.datetime "updated_at", null: false
     t.index ["event_uid"], name: "index_pickups_on_event_uid"
     t.index ["student_uid"], name: "index_pickups_on_student_uid"
+  end
+
+  create_table "raid_bosses", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "raid_type", null: false
+    t.string "event_content_uid"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_uid"], name: "index_raid_bosses_on_event_content_uid"
+    t.index ["uid"], name: "index_raid_bosses_on_uid", unique: true
+  end
+
+  create_table "raid_schedules", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "raid_boss_uid", null: false
+    t.string "region", null: false
+    t.string "raid_type", null: false
+    t.integer "season_index", null: false
+    t.string "terrain", null: false
+    t.datetime "start_at"
+    t.datetime "end_at"
+    t.jsonb "defense_types", default: []
+    t.string "attack_type"
+    t.integer "jp_season_index"
+    t.string "event_content_run_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["raid_boss_uid"], name: "index_raid_schedules_on_raid_boss_uid"
+    t.index ["raid_type", "jp_season_index"], name: "index_raid_schedules_on_raid_type_and_jp_season_index"
+    t.index ["region", "raid_type", "season_index"], name: "index_raid_schedules_on_region_and_raid_type_and_season_index", unique: true
+    t.index ["region", "start_at", "end_at"], name: "index_raid_schedules_on_region_and_start_at_and_end_at"
+    t.index ["uid"], name: "index_raid_schedules_on_uid", unique: true
   end
 
   create_table "raid_statistics", force: :cascade do |t|

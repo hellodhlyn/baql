@@ -32,4 +32,9 @@ namespace :sync do
     puts "Syncing currencies data..."
     Currency.sync!
   end
+
+  task raid_bosses: [:environment] do
+    puts "Syncing raid bosses data..."
+    RaidBoss.sync!
+  end
 end

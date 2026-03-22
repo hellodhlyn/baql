@@ -4,8 +4,12 @@ module Types
   class QueryType < Types::Base::Object
     field :event_content,  resolver: Queries::EventContentQuery
     field :event_contents, resolver: Queries::EventContentsQuery
-    field :raid, resolver: Queries::RaidQuery
-    field :raids, resolver: Queries::RaidsQuery
+    field :raid, resolver: Queries::RaidQuery   # deprecated
+    field :raids, resolver: Queries::RaidsQuery  # deprecated
+    field :raid_schedule,  resolver: Queries::RaidScheduleQuery
+    field :raid_schedules, resolver: Queries::RaidSchedulesQuery
+    field :raid_boss,   resolver: Queries::RaidBossQuery
+    field :raid_bosses, resolver: Queries::RaidBossesQuery
     field :student, resolver: Queries::StudentQuery
     field :students, resolver: Queries::StudentsQuery
     field :items, resolver: Queries::ItemsQuery

@@ -1,3 +1,4 @@
+# DEPRECATED: Use RaidBoss + RaidSchedule instead.
 class Raid < ApplicationRecord
   include ::Battleable
 
