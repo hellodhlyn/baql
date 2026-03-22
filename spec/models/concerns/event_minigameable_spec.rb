@@ -388,6 +388,230 @@ RSpec.describe EventMinigameable do
   end
 
   # ──────────────────────────────────────────────────────────────
+  # BoxGacha normalization — finite pool, total quantities per round
+  # ──────────────────────────────────────────────────────────────
+  describe "BoxGacha normalization" do
+    def build_box_entry(round:, goods_list:)
+      goods_list.map do |g|
+        {
+          "Round"              => round,
+          "GroupElementAmount" => g[:count],
+          "IsPrize"            => g.fetch(:prize, false),
+          "IsLegacy"           => false,
+          "Goods"              => [{
+            "ParcelTypeStr"        => [g[:type]],
+            "ParcelId"             => [g[:uid]],
+            "ParcelAmount"         => [g[:amount]],
+            "ConsumeParcelTypeStr" => ["Item"],
+            "ConsumeParcelId"      => [99],
+            "ConsumeParcelAmount"  => [6],
+          }],
+        }
+      end
+    end
+
+    def build_manage(round:, is_loop:, cost_id: 99, cost_amount: 6)
+      {
+        "Round"  => round,
+        "IsLoop" => is_loop,
+        "Goods"  => {
+          "ConsumeParcelTypeStr" => ["Item"],
+          "ConsumeParcelId"      => [cost_id],
+          "ConsumeParcelAmount"  => [cost_amount],
+        },
+      }
+    end
+
+    def build_box_gacha_ec(shop:, manage:)
+      raw = {
+        "season"    => { "EventContentTypeStr" => ["Stage", "BoxGacha"] },
+        "box_gacha" => { "shop" => shop.flatten, "manage" => manage },
+      }
+      EventContent.new(uid: "10839", baql_id: "baql::events::10839", raw_data_first: raw)
+    end
+
+    let(:round1_shop) do
+      build_box_entry(round: 1, goods_list: [
+        { count: 5, type: "Currency", uid: 1, amount: 100_000 },
+        { count: 2, type: "Item",     uid: 80, amount: 1 },
+      ])
+    end
+    let(:round2_shop) do
+      build_box_entry(round: 2, goods_list: [
+        { count: 3, type: "Currency", uid: 1, amount: 50_000 },
+        { count: 1, type: "Item",     uid: 80, amount: 5, prize: true },
+      ])
+    end
+    let(:manage_entries) do
+      [
+        build_manage(round: 1, is_loop: false),
+        build_manage(round: 2, is_loop: true),
+      ]
+    end
+
+    subject(:ec)     { build_box_gacha_ec(shop: [round1_shop, round2_shop], manage: manage_entries) }
+    subject(:config) { ec.minigame_configs.first }
+
+    it "returns minigame_type box_gacha" do
+      expect(config["minigame_type"]).to eq("box_gacha")
+    end
+
+    describe "payment" do
+      subject(:payment) { config["payment"] }
+
+      it { expect(payment["resource_type"]).to eq("item") }
+      it { expect(payment["resource_uid"]).to eq("99") }
+      it { expect(payment["quantity"]).to eq(6 * 7) }
+    end
+
+    describe "reward_groups" do
+      subject(:groups) { config["reward_groups"] }
+
+      it "produces one group per round" do
+        expect(groups.length).to eq(2)
+      end
+
+      describe "non-loop round (round 1)" do
+        subject(:group) { groups.find { |g| g.dig("condition", "type") == "exact" } }
+
+        it "uses exact condition with values=[1]" do
+          expect(group["condition"]["values"]).to eq([1])
+        end
+
+        it "aggregates currency(1) as 5×100000=500000" do
+          r = group["rewards"].find { |r| r["resource_type"] == "currency" && r["resource_uid"] == "1" }
+          expect(r["quantity"]).to eq(500_000.0)
+        end
+
+        it "aggregates item(80) as 2×1=2" do
+          r = group["rewards"].find { |r| r["resource_type"] == "item" && r["resource_uid"] == "80" }
+          expect(r["quantity"]).to eq(2.0)
+        end
+      end
+
+      describe "loop round (round 2)" do
+        subject(:group) { groups.find { |g| g.dig("condition", "type") == "gte" } }
+
+        it "uses gte condition with value=2" do
+          expect(group["condition"]["value"]).to eq(2)
+        end
+
+        it "aggregates currency(1) as 3×50000=150000" do
+          r = group["rewards"].find { |r| r["resource_type"] == "currency" && r["resource_uid"] == "1" }
+          expect(r["quantity"]).to eq(150_000.0)
+        end
+
+        it "aggregates item(80) as 1×5=5" do
+          r = group["rewards"].find { |r| r["resource_type"] == "item" && r["resource_uid"] == "80" }
+          expect(r["quantity"]).to eq(5.0)
+        end
+      end
+
+      describe "aggregation of same reward across multiple entries" do
+        let(:shop) do
+          build_box_entry(round: 1, goods_list: [
+            { count: 3, type: "Currency", uid: 1, amount: 100_000 },
+            { count: 2, type: "Currency", uid: 1, amount: 50_000 },
+          ])
+        end
+        let(:ec) { build_box_gacha_ec(shop: [shop], manage: [build_manage(round: 1, is_loop: true)]) }
+        let(:group) { ec.minigame_configs.first["reward_groups"].first }
+
+        it "sums identical resource across pool entries" do
+          r = group["rewards"].find { |r| r["resource_type"] == "currency" && r["resource_uid"] == "1" }
+          expect(r["quantity"]).to eq(3 * 100_000.0 + 2 * 50_000.0)
+        end
+      end
+
+      describe "unknown reward types are filtered" do
+        let(:shop) do
+          build_box_entry(round: 1, goods_list: [
+            { count: 1, type: "GachaGroup", uid: 999, amount: 1 },
+            { count: 2, type: "Item",       uid: 80,  amount: 1 },
+          ])
+        end
+        let(:ec) { build_box_gacha_ec(shop: [shop], manage: [build_manage(round: 1, is_loop: true)]) }
+        let(:group) { ec.minigame_configs.first["reward_groups"].first }
+
+        it "excludes unknown reward types" do
+          types = group["rewards"].map { |r| r["resource_type"] }
+          expect(types).not_to include("gachagroup")
+        end
+      end
+    end
+
+    context "when box_gacha key is absent" do
+      subject(:ec) do
+        raw = { "season" => { "EventContentTypeStr" => ["BoxGacha"] } }
+        EventContent.new(uid: "1", baql_id: "baql::events::1", raw_data_first: raw)
+      end
+
+      it "returns an empty array" do
+        expect(ec.minigame_configs).to eq([])
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # event 10839 fixture data — BoxGacha
+  # ──────────────────────────────────────────────────────────────
+  describe "event 10839 real data (BoxGacha)" do
+    let(:raw)    { JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/event.10839.json.gz"))) }
+    let(:ec)     { EventContent.new(uid: "10839", baql_id: "baql::events::10839", raw_data_first: raw) }
+    let(:config) { ec.minigame_configs.first }
+    let(:groups) { config["reward_groups"] }
+
+    it "returns minigame_type box_gacha" do
+      expect(config["minigame_type"]).to eq("box_gacha")
+    end
+
+    describe "payment" do
+      it "uses item 85340, total cost = 6 × 300 = 1800" do
+        expect(config["payment"]["resource_type"]).to eq("item")
+        expect(config["payment"]["resource_uid"]).to eq("85340")
+        expect(config["payment"]["quantity"]).to eq(1800)
+      end
+    end
+
+    describe "reward_groups" do
+      it "produces 9 groups (rounds 1-8 + loop round 9)" do
+        expect(groups.length).to eq(9)
+      end
+
+      it "rounds 1-8 use exact conditions" do
+        exact_groups = groups.select { |g| g.dig("condition", "type") == "exact" }
+        expect(exact_groups.length).to eq(8)
+        expect(exact_groups.map { |g| g.dig("condition", "values") }.sort).to eq((1..8).map { |r| [r] })
+      end
+
+      it "round 9 uses gte condition" do
+        loop_group = groups.find { |g| g.dig("condition", "type") == "gte" }
+        expect(loop_group["condition"]["value"]).to eq(9)
+      end
+
+      describe "round 1 reward totals" do
+        subject(:rewards) { groups.find { |g| g.dig("condition", "values") == [1] }["rewards"] }
+
+        def qty(type, uid)
+          rewards.find { |r| r["resource_type"] == type && r["resource_uid"] == uid.to_s }&.dig("quantity") || 0.0
+        end
+
+        it "currency(1) = 3×300000 + 8×150000 + 15×75000 + 20×30000 = 3825000" do
+          expect(qty("currency", 1)).to eq(3_825_000.0)
+        end
+
+        it "currency(3) = 1×150 = 150" do
+          expect(qty("currency", 3)).to eq(150.0)
+        end
+
+        it "item(85343) = 2×10 = 20" do
+          expect(qty("item", 85_343)).to eq(20.0)
+        end
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
   # event 850 fixture data — CardShop
   # ──────────────────────────────────────────────────────────────
   describe "event 850 real data" do

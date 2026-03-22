@@ -9,6 +9,7 @@ module EventMinigameable
     configs = []
     configs << normalize_card_shop_minigame(raw)    if types.include?("CardShop")
     configs << normalize_fortune_gacha_minigame(raw) if types.include?("FortuneGachaShop")
+    configs << normalize_box_gacha_minigame(raw)    if types.include?("BoxGacha")
     configs.compact
   end
 
@@ -59,6 +60,56 @@ module EventMinigameable
     reward_groups = [{ "condition" => { "type" => "subsequent" }, "rewards" => rewards }]
 
     { "minigame_type" => "fortune_gacha", "payment" => payment, "reward_groups" => reward_groups }
+  end
+
+  def normalize_box_gacha_minigame(raw)
+    shop    = raw.dig("box_gacha", "shop").presence
+    manage  = raw.dig("box_gacha", "manage").presence
+    return nil unless shop && manage
+
+    first_manage = manage.first
+    first_round  = first_manage["Round"]
+    pool_size    = shop.select { |e| e["Round"] == first_round }.sum { |e| e["GroupElementAmount"] }
+    cost_goods   = first_manage["Goods"]
+    payment = {
+      "resource_type" => cost_goods["ConsumeParcelTypeStr"]&.first&.downcase,
+      "resource_uid"  => cost_goods["ConsumeParcelId"]&.first&.to_s,
+      "quantity"      => cost_goods["ConsumeParcelAmount"]&.first.to_i * pool_size,
+    }
+
+    loop_round = manage.find { |m| m["IsLoop"] }&.dig("Round")
+
+    reward_groups = shop.group_by { |e| e["Round"] }.sort.map do |round, entries|
+      totals  = Hash.new(0.0)
+      meta    = {}
+
+      entries.each do |entry|
+        count = entry["GroupElementAmount"].to_i
+        goods = entry["Goods"][0]
+        goods["ParcelId"].each_with_index do |uid, i|
+          type_str = goods["ParcelTypeStr"][i]&.downcase
+          next unless EventContent::KNOWN_REWARD_TYPES.include?(type_str)
+
+          key = "#{type_str}::#{uid}"
+          totals[key] += count * goods["ParcelAmount"][i].to_f
+          meta[key] ||= { "resource_type" => type_str, "resource_uid" => uid.to_s }
+        end
+      end
+
+      rewards = totals
+        .map { |key, qty| meta[key].merge("quantity" => qty) }
+        .sort_by { |r| [r["resource_type"], r["resource_uid"].to_i] }
+
+      condition = if round == loop_round
+        { "type" => "gte", "value" => round }
+      else
+        { "type" => "exact", "values" => [round] }
+      end
+
+      { "condition" => condition, "rewards" => rewards }
+    end
+
+    { "minigame_type" => "box_gacha", "payment" => payment, "reward_groups" => reward_groups }
   end
 
   def compute_card_slot_rewards(cards)
