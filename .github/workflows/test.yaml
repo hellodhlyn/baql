@@ -29,6 +29,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.FIXTURES_REPO_TOKEN }}
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
