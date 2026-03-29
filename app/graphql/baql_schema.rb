@@ -2,6 +2,7 @@
 
 class BaqlSchema < GraphQL::Schema
   query(Types::QueryType)
+  mutation(Types::MutationType)
 
   orphan_types Types::CurrencyType, Types::EquipmentType, Types::FurnitureType
 

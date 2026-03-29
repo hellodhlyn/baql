@@ -55,13 +55,6 @@ module Types
     field :reward_groups,  [Types::EventMinigameRewardGroupType], null: false
   end
 
-  class EventContentScheduleType < Types::Base::Object
-    field :region,   String, null: false
-    field :run_type, String, null: false
-    field :start_at, GraphQL::Types::ISO8601DateTime, null: false
-    field :end_at,   GraphQL::Types::ISO8601DateTime, null: true
-  end
-
   class EventContentStageRewardType < Types::Base::Object
     field :resource,    Types::ResourceInterface, null: true
     field :amount,      Int,    null: false
@@ -147,6 +140,26 @@ module Types
     field :uid,  String, null: false
     field :name, String, null: false
     field :schedules, [Types::EventContentScheduleType], null: false
+    field :raw_data_first, GraphQL::Types::JSON, null: true
+    field :raw_data_rerun, GraphQL::Types::JSON, null: true
+
+    def raw_data_first
+      authorize_admin!
+      object.raw_data_first
+    end
+
+    def raw_data_rerun
+      authorize_admin!
+      object.raw_data_rerun
+    end
+
+    private
+
+    def authorize_admin!
+      unless context[:admin]
+        raise GraphQL::ExecutionError, "Authentication required to access raw data."
+      end
+    end
 
     field :stages, [Types::EventContentStageType], null: false do
       argument :run_type, RunTypeEnum, required: true

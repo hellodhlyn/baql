@@ -13,6 +13,10 @@ module GraphQLHelpers
     )
   end
 
+  def execute_graphql_as_admin(query, **opts)
+    execute_graphql(query, **opts, context: { admin: true }.merge(opts[:context] || {}))
+  end
+
   def query_context
     @query_context ||= GraphQL::Query.new(BaqlSchema, "{ __typename }").context
   end

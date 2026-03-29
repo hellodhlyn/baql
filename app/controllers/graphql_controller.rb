@@ -11,8 +11,7 @@ class GraphqlController < ApplicationController
     query = params[:query]
     operation_name = params[:operationName]
     context = {
-      # Query context goes here, for example:
-      # current_user: current_user,
+      admin: authenticate_admin,
     }
     result = BaqlSchema.execute(query, variables: variables, context: context, operation_name: operation_name)
     render json: result
@@ -22,6 +21,15 @@ class GraphqlController < ApplicationController
   end
 
   private
+
+  def authenticate_admin
+    header = request.headers["Authorization"]
+    return false unless header.present?
+
+    token = header.delete_prefix("Bearer ").strip
+    expected = ENV["ADMIN_API_KEY"]
+    expected.present? && ActiveSupport::SecurityUtils.secure_compare(token, expected)
+  end
 
   # Handle variables in form data, JSON body, or a blank value
   def prepare_variables(variables_param)
