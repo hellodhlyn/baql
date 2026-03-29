@@ -24,5 +24,16 @@ module Types
     # Recruitment
     field :create_recruitment, mutation: Mutations::Recruitments::CreateRecruitment
     field :update_recruitment, mutation: Mutations::Recruitments::UpdateRecruitment
+
+    # Campaign
+    field :create_campaign, mutation: Mutations::Campaigns::CreateCampaign
+    field :update_campaign, mutation: Mutations::Campaigns::UpdateCampaign
+
+    # JointFiringDrill
+    field :create_joint_firing_drill, mutation: Mutations::JointFiringDrills::CreateJointFiringDrill
+    field :update_joint_firing_drill, mutation: Mutations::JointFiringDrills::UpdateJointFiringDrill
+
+    # JointFiringDrillSchedule
+    field :upsert_joint_firing_drill_schedule, mutation: Mutations::JointFiringDrillSchedules::UpsertJointFiringDrillSchedule
   end
 end

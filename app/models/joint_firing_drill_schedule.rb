@@ -5,5 +5,6 @@ class JointFiringDrillSchedule < ApplicationRecord
              foreign_key: :drill_uid,
              inverse_of:  :schedules
 
-  validates :region, inclusion: { in: Constants::REGIONS }
+  validates :drill_uid, uniqueness: { scope: :region }
+  validates :region,    inclusion: { in: Constants::REGIONS }
 end

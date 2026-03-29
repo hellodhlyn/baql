@@ -6,6 +6,7 @@ class Campaign < ApplicationRecord
     schedule scrimmage exp
   ].freeze
 
+  validates :uid,        uniqueness: { scope: :region }
   validates :region,     inclusion: { in: Constants::REGIONS }
   validates :multiplier, numericality: { only_integer: true, greater_than: 1 }
   validate  :validate_categories
