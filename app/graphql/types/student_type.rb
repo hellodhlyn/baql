@@ -36,6 +36,13 @@ module Types
       query.order(skill_type: :asc, skill_level: :asc)
     end
 
+    field :skills, [Types::SkillType], null: false do
+      argument :skill_type, Types::SkillType::SkillTypeEnum, required: false
+    end
+    def skills(skill_type: nil)
+      object.skills(skill_type: skill_type)
+    end
+
     field :favorite_items, [Types::FavoriteItemType], null: false do
       argument :favorited, Boolean, required: false
     end

@@ -1,6 +1,15 @@
 class Student < ApplicationRecord
   include ImageSyncable
 
+  Skill = Data.define(:skill_type, :name)
+
+  SKILL_TYPES = {
+    "Ex" => "ex",
+    "Public" => "public",
+    "Passive" => "passive",
+    "ExtraPassive" => "extra_passive",
+  }.freeze
+
   after_save :flush_cache
 
   scope :all_without_multiclass, -> { where("multiclass_uid is null or multiclass_uid = uid") }
@@ -74,6 +83,19 @@ class Student < ApplicationRecord
     nil
   end
 
+  def skills(skill_type: nil)
+    skills = SKILL_TYPES.filter_map do |raw_skill_type, normalized_skill_type|
+      name = raw_data.dig("Skills", raw_skill_type, "Name")
+      next if name.blank?
+
+      Skill.new(skill_type: normalized_skill_type, name: name)
+    end
+
+    return skills unless skill_type.present?
+
+    skills.select { |skill| skill.skill_type == skill_type }
+  end
+
   private
 
   def self.update_student_attributes(student, row)
@@ -90,6 +112,7 @@ class Student < ApplicationRecord
       equipments:   row["Equipment"].map(&:downcase).join(","),
       order:        row["DefaultOrder"],
       schale_db_id: row["PathName"],
+      raw_data:     row,
     )
   end
 

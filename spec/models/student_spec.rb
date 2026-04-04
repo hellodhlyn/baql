@@ -45,6 +45,18 @@ RSpec.describe Student, type: :model do
           schale_db_id: "kayoko",
         )
       end
+
+      it "stores the source payload in raw_data" do
+        subject
+
+        student = Student.find_by(uid: "13005")
+
+        expect(student.raw_data["Name"]).to eq("카요코")
+        expect(student.raw_data.dig("Skills", "Ex", "Name")).to eq("패닉 브링거")
+        expect(student.raw_data.dig("Skills", "Public", "Name")).to eq("패닉샷")
+        expect(student.raw_data.dig("Skills", "Passive", "Name")).to eq("무서운 얼굴")
+        expect(student.raw_data.dig("Skills", "ExtraPassive", "Name")).to eq("어쩔 수 없네")
+      end
     end
 
     context "when the student data already exists" do

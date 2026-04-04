@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_16_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_04_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -231,10 +231,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_16_000001) do
   create_table "main_story_volumes", force: :cascade do |t|
     t.string "uid", null: false
     t.string "baql_id", null: false
+    t.string "label", null: false
     t.integer "sort_order", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "label"
     t.index ["sort_order"], name: "index_main_story_volumes_on_sort_order"
     t.index ["uid"], name: "index_main_story_volumes_on_uid", unique: true
   end
@@ -361,11 +361,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_16_000001) do
     t.string "baql_id", null: false
     t.string "content_type"
     t.string "content_uid"
+    t.string "recruitment_type", null: false
     t.datetime "start_at", null: false
     t.datetime "end_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "recruitment_type", null: false
     t.index ["content_type", "content_uid"], name: "index_recruitment_groups_on_content_type_and_content_uid"
     t.index ["uid"], name: "index_recruitment_groups_on_uid", unique: true
   end
@@ -378,9 +378,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_16_000001) do
     t.string "student_name", null: false
     t.string "recruitment_type", null: false
     t.boolean "pickup", default: true, null: false
+    t.boolean "rerun", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.boolean "rerun", default: false, null: false
     t.index ["recruitment_group_uid"], name: "index_recruitments_on_recruitment_group_uid"
     t.index ["student_uid"], name: "index_recruitments_on_student_uid"
     t.index ["uid"], name: "index_recruitments_on_uid", unique: true
@@ -441,6 +441,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_16_000001) do
     t.string "position"
     t.date "birthday"
     t.string "alt_names", default: [], array: true
+    t.jsonb "raw_data", default: {}, null: false
     t.index ["uid"], name: "index_students_on_uid", unique: true
   end
 
