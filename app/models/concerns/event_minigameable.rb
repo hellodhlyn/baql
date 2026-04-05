@@ -7,9 +7,10 @@ module EventMinigameable
 
     types = raw.dig("season", "EventContentTypeStr") || []
     configs = []
-    configs << normalize_card_shop_minigame(raw)    if types.include?("CardShop")
-    configs << normalize_fortune_gacha_minigame(raw) if types.include?("FortuneGachaShop")
-    configs << normalize_box_gacha_minigame(raw)    if types.include?("BoxGacha")
+    configs << normalize_card_shop_minigame(raw)      if types.include?("CardShop")
+    configs << normalize_fortune_gacha_minigame(raw)  if types.include?("FortuneGachaShop")
+    configs << normalize_box_gacha_minigame(raw)      if types.include?("BoxGacha")
+    configs << normalize_concentration_minigame(raw)  if types.include?("Concentration")
     configs.compact
   end
 
@@ -110,6 +111,71 @@ module EventMinigameable
     end
 
     { "minigame_type" => "box_gacha", "payment" => payment, "reward_groups" => reward_groups }
+  end
+
+  def normalize_concentration_minigame(raw)
+    concentration = raw["concentration"].presence
+    return nil unless concentration
+
+    info    = concentration["info"]&.first
+    cards   = concentration["card"]
+    rewards = concentration["reward"]
+    return nil unless info && cards && rewards
+
+    cost = info["CostGoods"]
+    payment = {
+      "resource_type" => cost["ConsumeParcelTypeStr"]&.first&.downcase,
+      "resource_uid"  => cost["ConsumeParcelId"]&.first&.to_s,
+      "quantity"      => cost["ConsumeParcelAmount"]&.first.to_i * info["MaxCardOpenCount"].to_i,
+    }
+
+    rarity_counts = cards.each_with_object(Hash.new(0)) { |c, h| h[c["Rarity"]] += 1 }
+
+    pair_totals = Hash.new(0.0)
+    pair_meta   = {}
+    rewards.select { |r| r["ConcentrationRewardTypeStr"] == "PairMatch" }.each do |entry|
+      multiplier = rarity_counts[entry["Rarity"]] || 0
+      entry["RewardParcelId"].each_with_index do |uid, i|
+        type_str = entry["RewardParcelTypeStr"][i]&.downcase
+        next unless EventContent::KNOWN_REWARD_TYPES.include?(type_str)
+
+        key = "#{type_str}::#{uid}"
+        pair_totals[key] += multiplier * entry["RewardParcelAmount"][i].to_f
+        pair_meta[key] ||= { "resource_type" => type_str, "resource_uid" => uid.to_s }
+      end
+    end
+
+    round_renewals = rewards.select { |r| r["ConcentrationRewardTypeStr"] == "RoundRenewal" }
+    loop_round     = round_renewals.find { |r| r["IsLoop"] }&.dig("Round")
+
+    reward_groups = round_renewals.sort_by { |r| r["Round"] }.map do |entry|
+      round  = entry["Round"]
+      totals = pair_totals.dup
+      meta   = pair_meta.dup
+
+      entry["RewardParcelId"].each_with_index do |uid, i|
+        type_str = entry["RewardParcelTypeStr"][i]&.downcase
+        next unless EventContent::KNOWN_REWARD_TYPES.include?(type_str)
+
+        key = "#{type_str}::#{uid}"
+        totals[key] += entry["RewardParcelAmount"][i].to_f
+        meta[key] ||= { "resource_type" => type_str, "resource_uid" => uid.to_s }
+      end
+
+      combined_rewards = totals
+        .map { |key, qty| meta[key].merge("quantity" => qty) }
+        .sort_by { |r| [r["resource_type"], r["resource_uid"].to_i] }
+
+      condition = if round == loop_round
+        { "type" => "gte", "value" => round }
+      else
+        { "type" => "exact", "values" => [round] }
+      end
+
+      { "condition" => condition, "rewards" => combined_rewards }
+    end
+
+    { "minigame_type" => "concentration", "payment" => payment, "reward_groups" => reward_groups }
   end
 
   def compute_card_slot_rewards(cards)

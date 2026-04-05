@@ -685,4 +685,262 @@ RSpec.describe EventMinigameable do
       end
     end
   end
+
+  # ──────────────────────────────────────────────────────────────
+  # Concentration normalization — deterministic per-round totals
+  # ──────────────────────────────────────────────────────────────
+  describe "Concentration normalization" do
+    def build_concentration_info(cost_id:, cost_amount:, cost_type: "Item", max_card_open: 12)
+      {
+        "MaxCardOpenCount" => max_card_open,
+        "MaxCardPairCount" => 6,
+        "CostGoods" => {
+          "ConsumeParcelTypeStr" => [cost_type],
+          "ConsumeParcelId"      => [cost_id],
+          "ConsumeParcelAmount"  => [cost_amount],
+        },
+      }
+    end
+
+    def build_concentration_card(card_id:, rarity:)
+      { "CardId" => card_id, "Rarity" => rarity }
+    end
+
+    def build_concentration_reward(type_str:, round:, rarity: 0, is_loop: false,
+                                   reward_ids:, reward_amounts:, reward_types:)
+      {
+        "ConcentrationRewardTypeStr" => type_str,
+        "Round"              => round,
+        "Rarity"             => rarity,
+        "IsLoop"             => is_loop,
+        "RewardParcelId"     => reward_ids,
+        "RewardParcelAmount" => reward_amounts,
+        "RewardParcelTypeStr" => reward_types,
+      }
+    end
+
+    def build_concentration_ec(info:, card:, reward:)
+      raw = {
+        "season"        => { "EventContentTypeStr" => ["Concentration"] },
+        "concentration" => { "info" => [info], "card" => card, "reward" => reward },
+      }
+      EventContent.new(uid: "852", baql_id: "baql::events::852", raw_data_first: raw)
+    end
+
+    # 2 cards (rarity 0 × 1, rarity 1 × 1)
+    # PairMatch rarity 0: item 80 × 10
+    # PairMatch rarity 1: item 80 × 5, currency 1 × 200
+    # RoundRenewal round 1 (fixed): currency 1 × 1000
+    # RoundRenewal round 2 (loop): item 99 × 3
+    let(:info)  { build_concentration_info(cost_id: 777, cost_amount: 100) }
+    let(:cards) do
+      [
+        build_concentration_card(card_id: 1, rarity: 0),
+        build_concentration_card(card_id: 2, rarity: 1),
+      ]
+    end
+    let(:rewards) do
+      [
+        build_concentration_reward(type_str: "PairMatch", round: 0, rarity: 0,
+                                   reward_ids: [80], reward_amounts: [10], reward_types: %w[Item]),
+        build_concentration_reward(type_str: "PairMatch", round: 0, rarity: 1,
+                                   reward_ids: [80, 1], reward_amounts: [5, 200], reward_types: %w[Item Currency]),
+        build_concentration_reward(type_str: "RoundRenewal", round: 1, is_loop: false,
+                                   reward_ids: [1], reward_amounts: [1000], reward_types: %w[Currency]),
+        build_concentration_reward(type_str: "RoundRenewal", round: 2, is_loop: true,
+                                   reward_ids: [99], reward_amounts: [3], reward_types: %w[Item]),
+      ]
+    end
+
+    subject(:ec)     { build_concentration_ec(info: info, card: cards, reward: rewards) }
+    subject(:config) { ec.minigame_configs.first }
+
+    it "returns minigame_type concentration" do
+      expect(config["minigame_type"]).to eq("concentration")
+    end
+
+    describe "payment" do
+      subject(:payment) { config["payment"] }
+
+      it { expect(payment["resource_type"]).to eq("item") }
+      it { expect(payment["resource_uid"]).to eq("777") }
+      it { expect(payment["quantity"]).to eq(100 * 12) }
+    end
+
+    describe "reward_groups" do
+      subject(:groups) { config["reward_groups"] }
+
+      it "produces one group per round" do
+        expect(groups.length).to eq(2)
+      end
+
+      it "non-loop round uses exact condition" do
+        g = groups.find { |g| g.dig("condition", "type") == "exact" }
+        expect(g["condition"]["values"]).to eq([1])
+      end
+
+      it "loop round uses gte condition" do
+        g = groups.find { |g| g.dig("condition", "type") == "gte" }
+        expect(g["condition"]["value"]).to eq(2)
+      end
+
+      describe "round 1 combined rewards" do
+        # PairMatch: rarity_0(×1)→item80×10, rarity_1(×1)→item80×5 + currency1×200
+        #   → item80 = 15, currency1 = 200
+        # RoundRenewal round1: currency1 × 1000
+        #   → currency1 total = 1200, item80 = 15
+        subject(:r1) { groups.find { |g| g.dig("condition", "values") == [1] }["rewards"] }
+
+        it "sums PairMatch item(80) across rarities: 10×1 + 5×1 = 15" do
+          r = r1.find { |r| r["resource_type"] == "item" && r["resource_uid"] == "80" }
+          expect(r["quantity"]).to eq(15.0)
+        end
+
+        it "sums PairMatch currency(1) + RoundRenewal currency(1): 200 + 1000 = 1200" do
+          r = r1.find { |r| r["resource_type"] == "currency" && r["resource_uid"] == "1" }
+          expect(r["quantity"]).to eq(1200.0)
+        end
+
+        it "does not include item(99) from round 2" do
+          expect(r1.map { |r| r["resource_uid"] }).not_to include("99")
+        end
+      end
+
+      describe "round 2 combined rewards (loop)" do
+        # PairMatch same as always: item80=15, currency1=200
+        # RoundRenewal round2: item99×3
+        subject(:r2) { groups.find { |g| g.dig("condition", "type") == "gte" }["rewards"] }
+
+        it "includes PairMatch rewards" do
+          r = r2.find { |r| r["resource_type"] == "item" && r["resource_uid"] == "80" }
+          expect(r["quantity"]).to eq(15.0)
+        end
+
+        it "includes RoundRenewal item(99) × 3" do
+          r = r2.find { |r| r["resource_type"] == "item" && r["resource_uid"] == "99" }
+          expect(r["quantity"]).to eq(3.0)
+        end
+
+        it "does not include currency(1) from round 1 RoundRenewal" do
+          r = r2.find { |r| r["resource_type"] == "currency" && r["resource_uid"] == "1" }
+          expect(r["quantity"]).to eq(200.0)  # PairMatch only, not 1200
+        end
+      end
+    end
+
+    describe "unknown reward types are filtered out" do
+      let(:rewards) do
+        [
+          build_concentration_reward(type_str: "PairMatch", round: 0, rarity: 0,
+                                     reward_ids: [999, 80], reward_amounts: [1, 5],
+                                     reward_types: %w[GachaGroup Item]),
+          build_concentration_reward(type_str: "RoundRenewal", round: 1, is_loop: true,
+                                     reward_ids: [1], reward_amounts: [100], reward_types: %w[Currency]),
+        ]
+      end
+
+      it "excludes GachaGroup from rewards" do
+        group = ec.minigame_configs.first["reward_groups"].first
+        types = group["rewards"].map { |r| r["resource_type"] }
+        expect(types).not_to include("gachagroup")
+      end
+    end
+
+    context "when concentration key is absent" do
+      subject(:ec) do
+        raw = { "season" => { "EventContentTypeStr" => ["Concentration"] } }
+        EventContent.new(uid: "852", baql_id: "baql::events::852", raw_data_first: raw)
+      end
+
+      it "returns an empty array" do
+        expect(ec.minigame_configs).to eq([])
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # event 852 fixture data — Concentration
+  # ──────────────────────────────────────────────────────────────
+  describe "event 852 real data (Concentration)" do
+    let(:raw)    { JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/event.852.json.gz"))) }
+    let(:ec)     { EventContent.new(uid: "852", baql_id: "baql::events::852", raw_data_first: raw) }
+    let(:config) { ec.minigame_configs.first }
+    let(:groups) { config["reward_groups"] }
+
+    it "returns minigame_type concentration" do
+      expect(config["minigame_type"]).to eq("concentration")
+    end
+
+    describe "payment" do
+      it "uses item 80710, quantity = 170 × 12 = 2040" do
+        expect(config["payment"]["resource_type"]).to eq("item")
+        expect(config["payment"]["resource_uid"]).to eq("80710")
+        expect(config["payment"]["quantity"]).to eq(2040)
+      end
+    end
+
+    describe "reward_groups" do
+      it "produces 10 groups (rounds 1-9 exact, round 10 gte)" do
+        expect(groups.length).to eq(10)
+      end
+
+      it "rounds 1-9 use exact conditions" do
+        exact_groups = groups.select { |g| g.dig("condition", "type") == "exact" }
+        expect(exact_groups.length).to eq(9)
+        expect(exact_groups.map { |g| g.dig("condition", "values") }.sort).to eq((1..9).map { |r| [r] })
+      end
+
+      it "round 10 uses gte condition" do
+        loop_group = groups.find { |g| g.dig("condition", "type") == "gte" }
+        expect(loop_group["condition"]["value"]).to eq(10)
+      end
+
+      describe "round 1 reward totals" do
+        subject(:rewards) { groups.find { |g| g.dig("condition", "values") == [1] }["rewards"] }
+
+        def qty(type, uid)
+          rewards.find { |r| r["resource_type"] == type && r["resource_uid"] == uid.to_s }&.dig("quantity") || 0.0
+        end
+
+        # PairMatch: rarity3(×2)=0, rarity2(×2)=0, rarity1(×1)=20, rarity0(×1)=30 → 50
+        it "equipment(1) = 50 (PairMatch only)" do
+          expect(qty("equipment", 1)).to eq(50.0)
+        end
+
+        # item::10: rarity3=0, rarity2=10×2=20, rarity1=15×1=15, rarity0=20×1=20 → 55
+        it "item(10) = 55 (PairMatch only)" do
+          expect(qty("item", 10)).to eq(55.0)
+        end
+
+        # RoundRenewal round 1 only
+        it "currency(1) = 1,000,000 (RoundRenewal only)" do
+          expect(qty("currency", 1)).to eq(1_000_000.0)
+        end
+
+        it "item(80713) = 20 (RoundRenewal only)" do
+          expect(qty("item", 80713)).to eq(20.0)
+        end
+      end
+
+      describe "round 10 reward totals (loop)" do
+        subject(:rewards) { groups.find { |g| g.dig("condition", "type") == "gte" }["rewards"] }
+
+        def qty(type, uid)
+          rewards.find { |r| r["resource_type"] == type && r["resource_uid"] == uid.to_s }&.dig("quantity") || 0.0
+        end
+
+        it "currency(1) = 900,000" do
+          expect(qty("currency", 1)).to eq(900_000.0)
+        end
+
+        it "item(80713) = 6" do
+          expect(qty("item", 80713)).to eq(6.0)
+        end
+
+        it "equipment(1) = 50 (PairMatch still included)" do
+          expect(qty("equipment", 1)).to eq(50.0)
+        end
+      end
+    end
+  end
 end
