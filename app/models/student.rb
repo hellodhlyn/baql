@@ -2,6 +2,8 @@ class Student < ApplicationRecord
   include ImageSyncable
 
   Skill = Data.define(:skill_type, :name)
+  Gear = Data.define(:name, :growth_items)
+  GearGrowthItem = Data.define(:gear_tier, :item, :amount)
 
   SKILL_TYPES = {
     "Ex" => "ex",
@@ -94,6 +96,30 @@ class Student < ApplicationRecord
     return skills unless skill_type.present?
 
     skills.select { |skill| skill.skill_type == skill_type }
+  end
+
+  def gear
+    gear_data = raw_data&.dig("Gear")
+    return nil if gear_data.blank? || gear_data["Name"].blank?
+
+    materials = Array(gear_data["TierUpMaterial"])
+    amounts = Array(gear_data["TierUpMaterialAmount"])
+    item_uids = materials.flatten.map(&:to_s).uniq
+    items_by_uid = Item.where(uid: item_uids).index_by(&:uid)
+
+    growth_items = materials.each_with_index.flat_map do |tier_item_uids, index|
+      tier_amounts = Array(amounts[index])
+
+      Array(tier_item_uids).map.with_index do |item_uid, item_index|
+        item = items_by_uid[item_uid.to_s]
+        amount = tier_amounts[item_index]
+        next unless item && amount
+
+        GearGrowthItem.new(gear_tier: index + 2, item: item, amount: amount)
+      end
+    end.compact
+
+    Gear.new(name: gear_data["Name"], growth_items: growth_items)
   end
 
   private

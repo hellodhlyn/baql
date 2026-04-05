@@ -43,6 +43,8 @@ module Types
       object.skills(skill_type: skill_type)
     end
 
+    field :gear, Types::GearType, null: true
+
     field :favorite_items, [Types::FavoriteItemType], null: false do
       argument :favorited, Boolean, required: false
     end

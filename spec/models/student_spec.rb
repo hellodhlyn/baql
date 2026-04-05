@@ -100,4 +100,65 @@ RSpec.describe Student, type: :model do
       it { is_expected.to be_falsey }
     end
   end
+
+  describe "#gear" do
+    let!(:item_5017) { FactoryBot.create(:item, uid: "5017", name: "안티키테라 장치", rarity: 3) }
+    let!(:item_150) { FactoryBot.create(:item, uid: "150", name: "네브라 디스크", rarity: 2) }
+    let!(:item_151) { FactoryBot.create(:item, uid: "151", name: "아틀라스 원반", rarity: 4) }
+
+    context "when the student has gear data" do
+      let(:student) do
+        FactoryBot.create(
+          :student,
+          raw_data: {
+            "Gear" => {
+              "Name" => "아루의 엄청 귀중한 지갑",
+              "TierUpMaterial" => [[5017, 150, 151]],
+              "TierUpMaterialAmount" => [[4, 80, 25]],
+            },
+          }
+        )
+      end
+
+      it "returns parsed gear data" do
+        gear = student.gear
+
+        expect(gear.name).to eq("아루의 엄청 귀중한 지갑")
+        expect(gear.growth_items).to contain_exactly(
+          have_attributes(gear_tier: 2, item: item_5017, amount: 4),
+          have_attributes(gear_tier: 2, item: item_150, amount: 80),
+          have_attributes(gear_tier: 2, item: item_151, amount: 25),
+        )
+      end
+    end
+
+    context "when the gear data is empty" do
+      let(:student) { FactoryBot.create(:student, raw_data: { "Gear" => {} }) }
+
+      it "returns nil" do
+        expect(student.gear).to be_nil
+      end
+    end
+
+    context "when a growth item does not exist in items" do
+      let(:student) do
+        FactoryBot.create(
+          :student,
+          raw_data: {
+            "Gear" => {
+              "Name" => "아루의 엄청 귀중한 지갑",
+              "TierUpMaterial" => [[5017, 999999]],
+              "TierUpMaterialAmount" => [[4, 1]],
+            },
+          }
+        )
+      end
+
+      it "filters the missing growth item out" do
+        expect(student.gear.growth_items).to contain_exactly(
+          have_attributes(gear_tier: 2, item: item_5017, amount: 4),
+        )
+      end
+    end
+  end
 end
