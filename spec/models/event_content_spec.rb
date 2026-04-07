@@ -1,6 +1,63 @@
 require "rails_helper"
 
 RSpec.describe EventContent, type: :model do
+  describe "rerun item duplication" do
+    let(:first_raw) do
+      {
+        "currency" => [
+          { "EventContentItemType" => 0, "ItemUniqueId" => 80540 },
+          { "EventContentItemType" => 1, "ItemUniqueId" => 80541 },
+          { "EventContentItemType" => 2, "ItemUniqueId" => 80542 },
+        ]
+      }
+    end
+
+    let(:rerun_raw) do
+      {
+        "currency" => [
+          { "EventContentItemType" => 0, "ItemUniqueId" => 85380 },
+          { "EventContentItemType" => 1, "ItemUniqueId" => 85381 },
+          { "EventContentItemType" => 2, "ItemUniqueId" => 85382 },
+        ]
+      }
+    end
+
+    before do
+      FactoryBot.create(:item, uid: "80540", baql_id: "baql::items::80540", category: "coin", rarity: 1, raw_data: { "Id" => 80540 }, name: "이벤트 포인트")
+      FactoryBot.create(:item, uid: "80541", baql_id: "baql::items::80541", category: "coin", rarity: 1, raw_data: { "Id" => 80541 }, name: "엑스포 기념품")
+      FactoryBot.create(:item, uid: "80542", baql_id: "baql::items::80542", category: "coin", rarity: 1, raw_data: { "Id" => 80542 }, name: "누군가의 분실물")
+
+      allow(Item).to receive(:copy_image!)
+    end
+
+    it "duplicates first-run event items when raw_data_rerun is first populated" do
+      event_content = FactoryBot.create(:event_content, uid: "843", raw_data_first: first_raw)
+
+      expect {
+        event_content.update!(raw_data_rerun: rerun_raw)
+      }.to change { Item.where(uid: %w[85380 85381 85382]).count }.from(0).to(3)
+
+      expect(Item.find_by!(uid: "85380").name).to eq("이벤트 포인트")
+      expect(Item.find_by!(uid: "85381").name).to eq("엑스포 기념품")
+      expect(Item.find_by!(uid: "85382").name).to eq("누군가의 분실물")
+
+      expect(Item).to have_received(:copy_image!).with("assets/images/items/80540", "assets/images/items/85380")
+      expect(Item).to have_received(:copy_image!).with("assets/images/items/80541", "assets/images/items/85381")
+      expect(Item).to have_received(:copy_image!).with("assets/images/items/80542", "assets/images/items/85382")
+    end
+
+    it "does not duplicate again once raw_data_rerun was already present" do
+      event_content = FactoryBot.create(:event_content, uid: "843", raw_data_first: first_raw)
+      event_content.update!(raw_data_rerun: rerun_raw)
+
+      expect {
+        event_content.update!(raw_data_rerun: rerun_raw.merge("shop" => {}))
+      }.not_to change { Item.where(uid: %w[85380 85381 85382]).count }
+
+      expect(Item).to have_received(:copy_image!).exactly(3).times
+    end
+  end
+
   # ──────────────────────────────────────────────────────────────
   # #shop_resources
   # ──────────────────────────────────────────────────────────────

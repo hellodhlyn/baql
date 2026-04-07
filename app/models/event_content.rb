@@ -3,6 +3,8 @@ class EventContent < ApplicationRecord
   include EventMinigameable
   include ImageSyncable
 
+  after_commit :duplicate_first_run_items_for_rerun!, if: :should_duplicate_first_run_items_for_rerun?
+
   has_many :schedules, class_name: "EventContentSchedule", foreign_key: :event_content_uid, primary_key: :uid
 
   validates :uid, presence: true, uniqueness: true
@@ -37,7 +39,7 @@ class EventContent < ApplicationRecord
       event_id = event_data["Id"].to_s
       event_content = find_or_initialize_by(uid: event_id, baql_id: "#{BAQL_ID_PREFIX}#{event_id}")
       event_content.save!
-      sync_event_logos!(event_content)
+      sync_event_logos!(event_content) if event_content.previously_new_record?
 
       # Original, Rerun, Permanent 각각 처리
       RUN_TYPE_MAP.each do |run_type_key, run_type|
@@ -134,6 +136,48 @@ class EventContent < ApplicationRecord
   end
 
   private
+
+  def should_duplicate_first_run_items_for_rerun?
+    saved_change_to_raw_data_rerun? &&
+      raw_data_rerun.present? &&
+      raw_data_rerun_before_last_save.blank? &&
+      raw_data_first.present?
+  end
+
+  def duplicate_first_run_items_for_rerun!
+    first_run_item_uids_by_type.each do |item_type, first_uid|
+      rerun_uid = rerun_item_uids_by_type[item_type]
+      next if rerun_uid.blank? || rerun_uid == first_uid
+      next if Item.exists?(uid: rerun_uid)
+
+      first_item = Item.find_by(uid: first_uid)
+      unless first_item
+        Rails.logger.warn("Skipping rerun item duplication for event #{uid}: missing source item #{first_uid} (type #{item_type})")
+        next
+      end
+
+      Rails.logger.info("Duplicating event item #{first_uid} -> #{rerun_uid} for event #{uid} (type #{item_type})")
+      first_item.duplicate!(rerun_uid)
+    end
+  end
+
+  def first_run_item_uids_by_type
+    event_item_uids_by_type(raw_data_first)
+  end
+
+  def rerun_item_uids_by_type
+    event_item_uids_by_type(raw_data_rerun)
+  end
+
+  def event_item_uids_by_type(raw)
+    (raw["currency"] || []).each_with_object({}) do |currency, map|
+      item_type = currency["EventContentItemType"]
+      item_uid = currency["ItemUniqueId"]&.to_s
+      next if item_type.nil? || item_uid.blank?
+
+      map[item_type.to_s] = item_uid
+    end
+  end
 
   def self.sync_event_logos!(event_content)
     LOGO_LOCALES.each do |locale_suffix|

@@ -2,9 +2,11 @@ namespace :sync do
   task all: [:environment] do
     Rake::Task["sync:students"].invoke
     Rake::Task["sync:items"].invoke
+    Rake::Task["sync:events"].invoke
     Rake::Task["sync:furnitures"].invoke
     Rake::Task["sync:equipments"].invoke
     Rake::Task["sync:currencies"].invoke
+    Rake::Task["sync:raid_bosses"].invoke
   end
 
   task students: [:environment] do
@@ -16,6 +18,11 @@ namespace :sync do
     puts "Syncing items data..."
     Item.sync!
     StudentFavoriteItem.sync!
+  end
+
+  task events: [:environment] do
+    puts "Syncing events data..."
+    EventContent.sync!
   end
 
   task furnitures: [:environment] do
