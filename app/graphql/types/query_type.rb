@@ -7,6 +7,7 @@ module Types
     field :raid, resolver: Queries::RaidQuery   # deprecated
     field :raids, resolver: Queries::RaidsQuery  # deprecated
     field :raid_schedule,  resolver: Queries::RaidScheduleQuery
+    field :raid_schedule_by_season_index, resolver: Queries::RaidScheduleBySeasonIndexQuery
     field :raid_schedules, resolver: Queries::RaidSchedulesQuery
     field :raid_boss,   resolver: Queries::RaidBossQuery
     field :raid_bosses, resolver: Queries::RaidBossesQuery
