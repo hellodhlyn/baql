@@ -26,7 +26,7 @@ module Types
       Recruitment.includes(:recruitment_group).where(student_uid: object.uid).order(:id)
     end
     field :skill_items, [Types::SkillItemType], null: false do
-      argument :skill_type, Types::SkillItemType::SkillTypeEnum, required: false
+      argument :skill_type, Types::Enums::StudentSkillItemTypeEnum, required: false
       argument :skill_level, Int, required: false
     end
     def skill_items(skill_type: nil, skill_level: nil)
@@ -37,7 +37,7 @@ module Types
     end
 
     field :skills, [Types::SkillType], null: false do
-      argument :skill_type, Types::SkillType::SkillTypeEnum, required: false
+      argument :skill_type, Types::Enums::StudentSkillTypeEnum, required: false
     end
     def skills(skill_type: nil)
       object.skills(skill_type: skill_type)

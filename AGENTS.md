@@ -273,7 +273,6 @@ Provides `ATTACK_TYPES` and `DEFENSE_TYPES` constants (used by `Raid`).
 | `event_content(uid)` | EventContentQuery |
 | `raid_boss(uid)` | RaidBossQuery |
 | `raid_bosses` | RaidBossesQuery |
-| `raid(uid)` | RaidQuery _(deprecated)_ |
 | `raids` | RaidsQuery _(deprecated)_ |
 | `student(uid)` | StudentQuery |
 | `students` | StudentsQuery |

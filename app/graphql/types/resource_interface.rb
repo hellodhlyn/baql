@@ -2,14 +2,7 @@ module Types
   module ResourceInterface
     include Types::Base::Interface
 
-    class ResourceTypeEnum < Types::Base::Enum
-      value "item", value: "item"
-      value "currency", value: "currency"
-      value "equipment", value: "equipment"
-      value "furniture", value: "furniture"
-    end
-
-    field :type, ResourceTypeEnum, null: false
+    field :type, Types::Enums::ResourceTypeEnum, null: false
     def type
       case object
       when ::Item      then "item"

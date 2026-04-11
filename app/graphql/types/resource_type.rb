@@ -2,14 +2,7 @@ module Types
   # DEPRECATED: Use Types::ResourceInterface and the individual types
   # (Types::ItemType, Types::CurrencyType, Types::EquipmentType, Types::FurnitureType) instead.
   class ResourceType < Types::Base::Object
-    class ResourceTypeEnum < Types::Base::Enum
-      value "item", value: "item"
-      value "equipment", value: "equipment"
-      value "furniture", value: "furniture"
-      value "currency", value: "currency"
-    end
-
-    field :type, ResourceTypeEnum, null: false
+    field :type, Types::Enums::ResourceTypeEnum, null: false
     def type = object.resource_type
 
     field :uid, String, null: false
