@@ -22,6 +22,11 @@ RSpec.describe RecruitmentGroup, type: :model do
       group = FactoryBot.build(:recruitment_group, content_type: "main_story_part", content_uid: "1-1-1")
       expect(group).to be_valid
     end
+
+    it "is valid with a season-aware main story part uid" do
+      group = FactoryBot.build(:recruitment_group, content_type: "main_story_part", content_uid: "2-1-1-1")
+      expect(group).to be_valid
+    end
   end
 
   describe "#content" do
@@ -44,6 +49,42 @@ RSpec.describe RecruitmentGroup, type: :model do
 
     context "when content_type is 'main_story_part'" do
       let(:main_story_part) { FactoryBot.create(:main_story_part) }
+      let(:group) { FactoryBot.build(:recruitment_group, content_type: "main_story_part", content_uid: main_story_part.uid) }
+
+      it "returns the associated MainStoryPart" do
+        expect(subject).to eq(main_story_part)
+      end
+    end
+
+    context "when content_type is 'main_story_part' with a season-aware uid" do
+      let!(:volume) do
+        FactoryBot.create(
+          :main_story_volume,
+          uid: "2-1",
+          baql_id: "#{MainStoryVolume::BAQL_ID_PREFIX}2-1",
+          season: 2,
+          label: "Vol.1",
+          sort_order: 1,
+        )
+      end
+      let!(:chapter) do
+        FactoryBot.create(
+          :main_story_chapter,
+          uid: "2-1-1",
+          baql_id: "#{MainStoryChapter::BAQL_ID_PREFIX}2-1-1",
+          volume_uid: volume.uid,
+          chapter_number: 1,
+        )
+      end
+      let!(:main_story_part) do
+        FactoryBot.create(
+          :main_story_part,
+          uid: "2-1-1-1",
+          baql_id: "#{MainStoryPart::BAQL_ID_PREFIX}2-1-1-1",
+          chapter_uid: chapter.uid,
+          sort_order: 1,
+        )
+      end
       let(:group) { FactoryBot.build(:recruitment_group, content_type: "main_story_part", content_uid: main_story_part.uid) }
 
       it "returns the associated MainStoryPart" do

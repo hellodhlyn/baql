@@ -23,6 +23,7 @@ module Types
 
   class MainStoryVolumeType < Types::Base::Object
     field :uid,        String, null: false
+    field :season,     Int,    null: false
     field :label,      String, null: false
     field :name,       String, null: true
     field :sort_order, Int,    null: false

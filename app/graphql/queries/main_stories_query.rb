@@ -3,7 +3,7 @@ module Queries
     type [Types::MainStoryVolumeType], null: false
 
     def resolve
-      MainStoryVolume.order(:sort_order)
+      MainStoryVolume.order(:season, :sort_order)
     end
   end
 end

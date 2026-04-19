@@ -5,6 +5,7 @@ class MainStoryVolume < ApplicationRecord
 
   validates :uid, presence: true, uniqueness: true
   validates :baql_id, presence: true
+  validates :season, presence: true
   validates :sort_order, presence: true
   validates :label, presence: true
 

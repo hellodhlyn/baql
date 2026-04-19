@@ -2,6 +2,7 @@ FactoryBot.define do
   factory :main_story_volume do
     sequence(:uid) { |n| n.to_s }
     baql_id { "#{MainStoryVolume::BAQL_ID_PREFIX}#{uid}" }
+    season { 1 }
     label { "Vol.#{uid}" }
     sequence(:sort_order) { |n| n }
   end
