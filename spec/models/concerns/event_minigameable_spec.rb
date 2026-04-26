@@ -890,7 +890,7 @@ RSpec.describe EventMinigameable do
 
       it { expect(payment["resource_type"]).to eq("item") }
       it { expect(payment["resource_uid"]).to eq("777") }
-      it { expect(payment["quantity"]).to eq(300) }
+      it { expect(payment["quantity"]).to eq(400) }
     end
 
     describe "payment ranges" do
@@ -1013,10 +1013,10 @@ RSpec.describe EventMinigameable do
     end
 
     describe "payment" do
-      it "uses item 80710, quantity = heuristic expected attempts 11 × 170 = 1870" do
+      it "keeps the legacy quantity at max attempts 12 × 170 = 2040" do
         expect(config["payment"]["resource_type"]).to eq("item")
         expect(config["payment"]["resource_uid"]).to eq("80710")
-        expect(config["payment"]["quantity"]).to eq(1870)
+        expect(config["payment"]["quantity"]).to eq(2040)
       end
 
       it "uses pair count, heuristic expected attempts, and max open count for the range" do
@@ -1182,6 +1182,38 @@ RSpec.describe EventMinigameable do
         "quantity_expected" => 6_625,
         "quantity_max" => 11_250,
       )
+    end
+
+    context "when treasures fill the whole board" do
+      let(:rounds) do
+        [
+          build_treasure_round(round: 1, reward_ids: [1001], reward_amounts: [45]),
+        ]
+      end
+      let(:rewards) do
+        [
+          [
+            "1001",
+            {
+              "Id" => 1001,
+              "CellUnderImageWidth" => 1,
+              "CellUnderImageHeight" => 1,
+              "RewardParcelId" => [80],
+              "RewardParcelAmount" => [1],
+              "RewardParcelTypeStr" => %w[Item],
+            },
+          ],
+        ]
+      end
+
+      it "marks the payment range as non-variable" do
+        expect(groups.first["payment"]).to include(
+          "quantity_min" => 11_250,
+          "quantity_expected" => 11_250,
+          "quantity_max" => 11_250,
+          "quantity_variable" => false,
+        )
+      end
     end
 
     it "sums every treasure in the round by RewardAmount" do

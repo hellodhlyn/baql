@@ -129,7 +129,7 @@ module EventMinigameable
     payment = {
       "resource_type" => cost["ConsumeParcelTypeStr"]&.first&.downcase,
       "resource_uid"  => cost["ConsumeParcelId"]&.first&.to_s,
-      "quantity"      => payment_range["quantity_expected"],
+      "quantity"      => payment_range["quantity_max"],
     }
 
     rarity_counts = cards.each_with_object(Hash.new(0)) { |c, h| h[c["Rarity"]] += 1 }
@@ -192,6 +192,8 @@ module EventMinigameable
     first_round = rounds.first
     cost = first_round["CellCheckGoods"]
     first_payment_range = treasure_payment_range(first_round, rewards)
+    return nil unless first_payment_range
+
     payment = {
       "resource_type" => cost["ConsumeParcelTypeStr"]&.first&.downcase,
       "resource_uid"  => cost["ConsumeParcelId"]&.first&.to_s,
@@ -229,7 +231,10 @@ module EventMinigameable
         { "type" => "exact", "values" => [round["TreasureRound"]] }
       end
 
-      build_reward_group(condition, normalized_rewards, treasure_payment_range(round, rewards))
+      payment_range = treasure_payment_range(round, rewards)
+      return nil unless payment_range
+
+      build_reward_group(condition, normalized_rewards, payment_range)
     end
 
     build_minigame_config("treasure_hunt", payment, reward_groups)
@@ -242,14 +247,14 @@ module EventMinigameable
     rounds = clue["round"].presence
     return nil unless rounds
 
-    first_payments = clue_round_payments(rounds.first)
-    first_payment = first_payments.first
+    first_payment_ranges = clue_round_payment_ranges(rounds.first)
+    first_payment = legacy_payment(first_payment_ranges.first)
     return nil unless first_payment
 
     loop_round = rounds.find { |round| round["IsLoop"] }&.dig("Round")
 
     reward_groups = rounds.sort_by { |r| r["Round"] }.map do |round|
-      payments = clue_round_payments(round)
+      payments = clue_round_payment_ranges(round)
       rewards = normalize_reward_parcels(round["Reward"])
       condition = if round["Round"] == loop_round
         { "type" => "gte", "value" => round["Round"] }
@@ -260,6 +265,7 @@ module EventMinigameable
       build_reward_group(condition, rewards, payments.first, payments)
     end
 
+    first_payments = first_payment_ranges.map { |payment| legacy_payment(payment) }
     build_minigame_config("clue_search", first_payment, reward_groups, first_payments)
   end
 
@@ -287,6 +293,16 @@ module EventMinigameable
       "quantity_expected" => payment["quantity"],
       "quantity_max"      => payment["quantity"],
       "quantity_variable" => false,
+    }
+  end
+
+  def legacy_payment(payment_range)
+    return nil unless payment_range
+
+    {
+      "resource_type" => payment_range["resource_type"],
+      "resource_uid" => payment_range["resource_uid"],
+      "quantity" => payment_range["quantity_expected"],
     }
   end
 
@@ -318,7 +334,10 @@ module EventMinigameable
 
   def treasure_payment_range(round, rewards)
     cost = round["CellCheckGoods"]
-    board_cells = (round["TreasureRoundSize"] || []).map(&:to_i).reduce(1, :*)
+    board_size = (round["TreasureRoundSize"] || []).map(&:to_i)
+    return nil if board_size.empty?
+
+    board_cells = board_size.reduce(1, :*)
     cell_cost = cost["ConsumeParcelAmount"]&.first.to_i
     treasure_cells = round["RewardId"].each_with_index.sum do |reward_id, index|
       reward_entry = rewards[reward_id.to_s]
@@ -337,11 +356,11 @@ module EventMinigameable
       "quantity_min"      => quantity_min,
       "quantity_expected" => ((quantity_min + quantity_max) / 2.0).ceil,
       "quantity_max"      => quantity_max,
-      "quantity_variable" => true,
+      "quantity_variable" => quantity_min != quantity_max,
     }
   end
 
-  def clue_round_payments(round)
+  def clue_round_payment_ranges(round)
     totals = Hash.new(0)
 
     round["ClueId"].each_with_index do |uid, index|
@@ -351,9 +370,9 @@ module EventMinigameable
     totals
       .map do |uid, quantity|
         {
+          # ClueSearch currently encodes clue costs as item ids.
           "resource_type" => "item",
           "resource_uid"  => uid,
-          "quantity" => quantity,
           "quantity_min" => quantity,
           "quantity_expected" => quantity,
           "quantity_max" => quantity,
