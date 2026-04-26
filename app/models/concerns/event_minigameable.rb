@@ -57,7 +57,7 @@ module EventMinigameable
       "quantity"      => cost["ConsumeParcelAmount"]&.first,
     }
 
-    rewards = compute_card_slot_rewards(entries)
+    rewards = compute_card_slot_rewards(entries, gacha_groups: raw.dig("icons", "GachaGroup"))
     reward_groups = [{ "condition" => { "type" => "subsequent" }, "rewards" => rewards }]
 
     { "minigame_type" => "fortune_gacha", "payment" => payment, "reward_groups" => reward_groups }
@@ -178,7 +178,7 @@ module EventMinigameable
     { "minigame_type" => "concentration", "payment" => payment, "reward_groups" => reward_groups }
   end
 
-  def compute_card_slot_rewards(cards)
+  def compute_card_slot_rewards(cards, gacha_groups: nil)
     total_prob = cards.sum { |c| c["Prob"].to_f }
     expected   = Hash.new(0.0)
     meta       = {}
@@ -187,10 +187,17 @@ module EventMinigameable
       weight = card["Prob"].to_f / total_prob
       card["RewardParcelId"].each_with_index do |uid, i|
         type_str = card["RewardParcelTypeStr"][i]&.downcase
+        amount = card["RewardParcelAmount"][i].to_f
+
+        if type_str == "gachagroup"
+          accumulate_gacha_group_rewards(expected, meta, gacha_groups, uid, weight * amount)
+          next
+        end
+
         next unless EventContent::KNOWN_REWARD_TYPES.include?(type_str)
 
         key = "#{type_str}::#{uid}"
-        expected[key] += weight * card["RewardParcelAmount"][i].to_f
+        expected[key] += weight * amount
         meta[key] ||= { "resource_type" => type_str, "resource_uid" => uid.to_s }
       end
     end
@@ -198,6 +205,31 @@ module EventMinigameable
     expected
       .map { |key, qty| meta[key].merge("quantity" => qty) }
       .sort_by { |r| [r["resource_type"], r["resource_uid"].to_i] }
+  end
+
+  def accumulate_gacha_group_rewards(expected, meta, gacha_groups, group_uid, group_quantity)
+    elements = gacha_groups&.dig(group_uid.to_s, "GachaElement")
+    return if elements.blank?
+
+    total_prob = elements.sum { |element| element["Prob"].to_f }
+    return if total_prob <= 0
+
+    elements.each do |element|
+      type_str = element["ParcelTypeStr"]&.downcase
+      next unless EventContent::KNOWN_REWARD_TYPES.include?(type_str)
+
+      uid = element["ParcelId"]
+      key = "#{type_str}::#{uid}"
+      amount = gacha_group_element_expected_amount(element)
+      expected[key] += group_quantity * (element["Prob"].to_f / total_prob) * amount
+      meta[key] ||= { "resource_type" => type_str, "resource_uid" => uid.to_s }
+    end
+  end
+
+  def gacha_group_element_expected_amount(element)
+    min = element["ParcelAmountMin"].to_f
+    max = element["ParcelAmountMax"].to_f
+    (min + max) / 2.0
   end
 
   # 동일한 보상 분포인지 비교하기 위한 정규화된 서명

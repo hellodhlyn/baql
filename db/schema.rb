@@ -231,11 +231,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_130000) do
   create_table "main_story_volumes", force: :cascade do |t|
     t.string "uid", null: false
     t.string "baql_id", null: false
-    t.integer "season", null: false
     t.string "label", null: false
     t.integer "sort_order", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "season", null: false
     t.index ["sort_order"], name: "index_main_story_volumes_on_sort_order"
     t.index ["uid"], name: "index_main_story_volumes_on_uid", unique: true
   end

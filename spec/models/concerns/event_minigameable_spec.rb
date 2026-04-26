@@ -46,12 +46,19 @@ RSpec.describe EventMinigameable do
     }
   end
 
-  def build_fortune_gacha_ec(shop:)
+  def build_fortune_gacha_ec(shop:, gacha_groups: nil)
     raw = {
       "season" => { "EventContentTypeStr" => ["FortuneGachaShop"] },
       "fortune_gacha" => { "shop" => shop },
     }
+    raw["icons"] = { "GachaGroup" => gacha_groups } if gacha_groups
     EventContent.new(uid: "851", baql_id: "baql::events::851", raw_data_first: raw)
+  end
+
+  def qty(rewards, resource_type, uid)
+    rewards
+      .find { |r| r["resource_type"] == resource_type && r["resource_uid"] == uid.to_s }
+      &.dig("quantity") || 0.0
   end
 
   # ──────────────────────────────────────────────────────────────
@@ -245,10 +252,13 @@ RSpec.describe EventMinigameable do
   describe "FortuneGachaShop normalization" do
     #
     # 3 entries, total_prob = 1000
-    #   - Entry A (prob=100): GachaGroup 300001×1, currency "1" ×1000  → currency: 0.1×1000=100
-    #   - Entry B (prob=200): GachaGroup 300002×2, currency "1" ×500   → currency: 0.2×500=100
+    #   - Entry A (prob=100): GachaGroup 300001×1, currency "1" ×1000
+    #   - Entry B (prob=200): GachaGroup 300002×2, currency "1" ×500
     #   - Entry C (prob=700): item "80" ×5                              → item: 0.7×5=3.5
-    #   GachaGroup rewards are filtered out
+    #   GachaGroup 300001 has two equally weighted item leaves:
+    #     item "100" ×1, item "110" ×1 → each 0.1×1×0.5=0.05
+    #   GachaGroup 300002 has one item leaf with a quantity range:
+    #     item "120" ×2..4 → 0.2×2×3=1.2
     #
     let(:entry_a) do
       build_gacha_entry(prob: 100,
@@ -265,8 +275,56 @@ RSpec.describe EventMinigameable do
                         reward_ids: [80], reward_amounts: [5],
                         reward_types: %w[Item])
     end
+    let(:gacha_groups) do
+      {
+        "300001" => {
+          "GachaElement" => [
+            {
+              "GachaGroupId" => 300001,
+              "ParcelAmountMax" => 1,
+              "ParcelAmountMin" => 1,
+              "ParcelId" => 100,
+              "ParcelTypeStr" => "Item",
+              "Prob" => 1,
+            },
+            {
+              "GachaGroupId" => 300001,
+              "ParcelAmountMax" => 1,
+              "ParcelAmountMin" => 1,
+              "ParcelId" => 110,
+              "ParcelTypeStr" => "Item",
+              "Prob" => 1,
+            },
+          ],
+        },
+        "300002" => {
+          "GachaElement" => [
+            {
+              "GachaGroupId" => 300002,
+              "ParcelAmountMax" => 4,
+              "ParcelAmountMin" => 2,
+              "ParcelId" => 120,
+              "ParcelTypeStr" => "Item",
+              "Prob" => 1,
+            },
+          ],
+        },
+        "300003" => {
+          "GachaElementRecursive" => [
+            {
+              "GachaGroupId" => 300003,
+              "ParcelAmountMax" => 1,
+              "ParcelAmountMin" => 1,
+              "ParcelId" => 300001,
+              "ParcelTypeStr" => "GachaGroup",
+              "Prob" => 1,
+            },
+          ],
+        },
+      }
+    end
 
-    subject(:ec) { build_fortune_gacha_ec(shop: [entry_a, entry_b, entry_c]) }
+    subject(:ec) { build_fortune_gacha_ec(shop: [entry_a, entry_b, entry_c], gacha_groups: gacha_groups) }
     let(:config) { ec.minigame_configs.first }
 
     it "returns minigame_type fortune_gacha" do
@@ -302,9 +360,18 @@ RSpec.describe EventMinigameable do
           expect(r["quantity"]).to be_within(0.0001).of(3.5)
         end
 
-        it "filters out GachaGroup rewards" do
+        it "does not include GachaGroup rewards directly" do
           types = rewards.map { |r| r["resource_type"] }
           expect(types).not_to include("gachagroup")
+        end
+
+        it "expands equally weighted GachaGroup leaves" do
+          expect(qty(rewards, "item", 100)).to be_within(0.0001).of(0.05)
+          expect(qty(rewards, "item", 110)).to be_within(0.0001).of(0.05)
+        end
+
+        it "uses the average of ranged GachaGroup leaf amounts" do
+          expect(qty(rewards, "item", 120)).to be_within(0.0001).of(1.2)
         end
       end
     end
@@ -317,6 +384,54 @@ RSpec.describe EventMinigameable do
 
       it "returns an empty array" do
         expect(ec.minigame_configs).to eq([])
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # event 853 fixture data — FortuneGachaShop with GachaGroup leaves
+  # ──────────────────────────────────────────────────────────────
+  describe "event 853 real data (FortuneGachaShop GachaGroup expansion)" do
+    let(:raw)    { JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/event.853.json.gz"))) }
+    let(:ec)     { EventContent.new(uid: "853", baql_id: "baql::events::853", raw_data_first: raw) }
+    let(:config) { ec.minigame_configs.first }
+    let(:rewards) { config["reward_groups"].first["rewards"] }
+
+    it "returns minigame_type fortune_gacha" do
+      expect(config["minigame_type"]).to eq("fortune_gacha")
+    end
+
+    it "does not include GachaGroup rewards directly" do
+      types = rewards.map { |r| r["resource_type"] }
+      expect(types).not_to include("gachagroup")
+    end
+
+    it "keeps direct rewards" do
+      expect(qty(rewards, "currency", 1)).to be_within(1.0).of(411_000.0)
+      expect(qty(rewards, "item", 23)).to be_within(0.0001).of(1.505)
+    end
+
+    it "expands lower artifact GachaGroup rewards" do
+      [160, 190, 220, 280].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.65)
+      end
+    end
+
+    it "expands middle artifact GachaGroup rewards" do
+      [161, 191, 221, 281].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.3675)
+      end
+    end
+
+    it "expands high artifact GachaGroup rewards" do
+      [162, 192, 222, 282].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.1625)
+      end
+    end
+
+    it "expands highest artifact GachaGroup rewards" do
+      [163, 193, 223, 283].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.040625)
       end
     end
   end
