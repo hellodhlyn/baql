@@ -18,6 +18,20 @@ module Types
     end
   end
 
+  class EventMinigamePaymentRangeType < Types::Base::Object
+    field :resource, Types::ResourceInterface, null: true
+    field :quantity_min, Int, null: false
+    field :quantity_expected, Int, null: false
+    field :quantity_max, Int, null: false
+
+    def resource
+      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
+      return nil unless klass_proc && object["resource_uid"]
+
+      klass_proc.call.find_by(uid: object["resource_uid"])
+    end
+  end
+
   class EventMinigameRewardItemType < Types::Base::Object
     field :resource, Types::ResourceInterface, null: true
     field :quantity, Float, null: false
@@ -46,6 +60,7 @@ module Types
 
   class EventMinigameRewardGroupType < Types::Base::Object
     field :condition, Types::EventMinigameSlotConditionType, null: false
+    field :payment,   Types::EventMinigamePaymentRangeType,  null: false
     field :rewards,   [Types::EventMinigameRewardItemType],  null: false
   end
 
