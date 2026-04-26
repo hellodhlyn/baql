@@ -46,12 +46,19 @@ RSpec.describe EventMinigameable do
     }
   end
 
-  def build_fortune_gacha_ec(shop:)
+  def build_fortune_gacha_ec(shop:, gacha_groups: nil)
     raw = {
       "season" => { "EventContentTypeStr" => ["FortuneGachaShop"] },
       "fortune_gacha" => { "shop" => shop },
     }
+    raw["icons"] = { "GachaGroup" => gacha_groups } if gacha_groups
     EventContent.new(uid: "851", baql_id: "baql::events::851", raw_data_first: raw)
+  end
+
+  def qty(rewards, resource_type, uid)
+    rewards
+      .find { |r| r["resource_type"] == resource_type && r["resource_uid"] == uid.to_s }
+      &.dig("quantity") || 0.0
   end
 
   # ──────────────────────────────────────────────────────────────
@@ -162,6 +169,17 @@ RSpec.describe EventMinigameable do
           expect(group["condition"]["remainders"]).to eq([1, 2])
         end
 
+        it "uses the deterministic payment quantity for min/expected/max" do
+          expect(group["payment"]).to include(
+            "resource_type" => "item",
+            "resource_uid" => "99",
+        "quantity_min" => 200,
+        "quantity_expected" => 200,
+        "quantity_max" => 200,
+        "quantity_variable" => false,
+      )
+        end
+
         it "computes weighted expected quantity for item 80" do
           r = group["rewards"].find { |r| r["resource_type"] == "item" && r["resource_uid"] == "80" }
           expect(r["quantity"]).to be_within(0.0001).of(1000.0 / 300)
@@ -245,10 +263,13 @@ RSpec.describe EventMinigameable do
   describe "FortuneGachaShop normalization" do
     #
     # 3 entries, total_prob = 1000
-    #   - Entry A (prob=100): GachaGroup 300001×1, currency "1" ×1000  → currency: 0.1×1000=100
-    #   - Entry B (prob=200): GachaGroup 300002×2, currency "1" ×500   → currency: 0.2×500=100
+    #   - Entry A (prob=100): GachaGroup 300001×1, currency "1" ×1000
+    #   - Entry B (prob=200): GachaGroup 300002×2, currency "1" ×500
     #   - Entry C (prob=700): item "80" ×5                              → item: 0.7×5=3.5
-    #   GachaGroup rewards are filtered out
+    #   GachaGroup 300001 has two equally weighted item leaves:
+    #     item "100" ×1, item "110" ×1 → each 0.1×1×0.5=0.05
+    #   GachaGroup 300002 has one item leaf with a quantity range:
+    #     item "120" ×2..4 → 0.2×2×3=1.2
     #
     let(:entry_a) do
       build_gacha_entry(prob: 100,
@@ -265,8 +286,56 @@ RSpec.describe EventMinigameable do
                         reward_ids: [80], reward_amounts: [5],
                         reward_types: %w[Item])
     end
+    let(:gacha_groups) do
+      {
+        "300001" => {
+          "GachaElement" => [
+            {
+              "GachaGroupId" => 300001,
+              "ParcelAmountMax" => 1,
+              "ParcelAmountMin" => 1,
+              "ParcelId" => 100,
+              "ParcelTypeStr" => "Item",
+              "Prob" => 1,
+            },
+            {
+              "GachaGroupId" => 300001,
+              "ParcelAmountMax" => 1,
+              "ParcelAmountMin" => 1,
+              "ParcelId" => 110,
+              "ParcelTypeStr" => "Item",
+              "Prob" => 1,
+            },
+          ],
+        },
+        "300002" => {
+          "GachaElement" => [
+            {
+              "GachaGroupId" => 300002,
+              "ParcelAmountMax" => 4,
+              "ParcelAmountMin" => 2,
+              "ParcelId" => 120,
+              "ParcelTypeStr" => "Item",
+              "Prob" => 1,
+            },
+          ],
+        },
+        "300003" => {
+          "GachaElementRecursive" => [
+            {
+              "GachaGroupId" => 300003,
+              "ParcelAmountMax" => 1,
+              "ParcelAmountMin" => 1,
+              "ParcelId" => 300001,
+              "ParcelTypeStr" => "GachaGroup",
+              "Prob" => 1,
+            },
+          ],
+        },
+      }
+    end
 
-    subject(:ec) { build_fortune_gacha_ec(shop: [entry_a, entry_b, entry_c]) }
+    subject(:ec) { build_fortune_gacha_ec(shop: [entry_a, entry_b, entry_c], gacha_groups: gacha_groups) }
     let(:config) { ec.minigame_configs.first }
 
     it "returns minigame_type fortune_gacha" do
@@ -302,9 +371,18 @@ RSpec.describe EventMinigameable do
           expect(r["quantity"]).to be_within(0.0001).of(3.5)
         end
 
-        it "filters out GachaGroup rewards" do
+        it "does not include GachaGroup rewards directly" do
           types = rewards.map { |r| r["resource_type"] }
           expect(types).not_to include("gachagroup")
+        end
+
+        it "expands equally weighted GachaGroup leaves" do
+          expect(qty(rewards, "item", 100)).to be_within(0.0001).of(0.05)
+          expect(qty(rewards, "item", 110)).to be_within(0.0001).of(0.05)
+        end
+
+        it "uses the average of ranged GachaGroup leaf amounts" do
+          expect(qty(rewards, "item", 120)).to be_within(0.0001).of(1.2)
         end
       end
     end
@@ -317,6 +395,54 @@ RSpec.describe EventMinigameable do
 
       it "returns an empty array" do
         expect(ec.minigame_configs).to eq([])
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # event 853 fixture data — FortuneGachaShop with GachaGroup leaves
+  # ──────────────────────────────────────────────────────────────
+  describe "event 853 real data (FortuneGachaShop GachaGroup expansion)" do
+    let(:raw)    { JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/event.853.json.gz"))) }
+    let(:ec)     { EventContent.new(uid: "853", baql_id: "baql::events::853", raw_data_first: raw) }
+    let(:config) { ec.minigame_configs.first }
+    let(:rewards) { config["reward_groups"].first["rewards"] }
+
+    it "returns minigame_type fortune_gacha" do
+      expect(config["minigame_type"]).to eq("fortune_gacha")
+    end
+
+    it "does not include GachaGroup rewards directly" do
+      types = rewards.map { |r| r["resource_type"] }
+      expect(types).not_to include("gachagroup")
+    end
+
+    it "keeps direct rewards" do
+      expect(qty(rewards, "currency", 1)).to be_within(1.0).of(411_000.0)
+      expect(qty(rewards, "item", 23)).to be_within(0.0001).of(1.505)
+    end
+
+    it "expands lower artifact GachaGroup rewards" do
+      [160, 190, 220, 280].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.65)
+      end
+    end
+
+    it "expands middle artifact GachaGroup rewards" do
+      [161, 191, 221, 281].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.3675)
+      end
+    end
+
+    it "expands high artifact GachaGroup rewards" do
+      [162, 192, 222, 282].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.1625)
+      end
+    end
+
+    it "expands highest artifact GachaGroup rewards" do
+      [163, 193, 223, 283].each do |uid|
+        expect(qty(rewards, "item", uid)).to be_within(0.0001).of(0.040625)
       end
     end
   end
@@ -690,10 +816,10 @@ RSpec.describe EventMinigameable do
   # Concentration normalization — deterministic per-round totals
   # ──────────────────────────────────────────────────────────────
   describe "Concentration normalization" do
-    def build_concentration_info(cost_id:, cost_amount:, cost_type: "Item", max_card_open: 12)
+    def build_concentration_info(cost_id:, cost_amount:, cost_type: "Item", max_card_open: 12, max_card_pair: 6)
       {
         "MaxCardOpenCount" => max_card_open,
-        "MaxCardPairCount" => 6,
+        "MaxCardPairCount" => max_card_pair,
         "CostGoods" => {
           "ConsumeParcelTypeStr" => [cost_type],
           "ConsumeParcelId"      => [cost_id],
@@ -732,7 +858,7 @@ RSpec.describe EventMinigameable do
     # PairMatch rarity 1: item 80 × 5, currency 1 × 200
     # RoundRenewal round 1 (fixed): currency 1 × 1000
     # RoundRenewal round 2 (loop): item 99 × 3
-    let(:info)  { build_concentration_info(cost_id: 777, cost_amount: 100) }
+    let(:info)  { build_concentration_info(cost_id: 777, cost_amount: 100, max_card_open: 4, max_card_pair: 1) }
     let(:cards) do
       [
         build_concentration_card(card_id: 1, rarity: 0),
@@ -764,7 +890,22 @@ RSpec.describe EventMinigameable do
 
       it { expect(payment["resource_type"]).to eq("item") }
       it { expect(payment["resource_uid"]).to eq("777") }
-      it { expect(payment["quantity"]).to eq(100 * 12) }
+      it { expect(payment["quantity"]).to eq(400) }
+    end
+
+    describe "payment ranges" do
+      subject(:payment) { config["reward_groups"].first["payment"] }
+
+      it "uses pair count as min, max open count as max, and a concentration heuristic as expected" do
+        expect(payment).to include(
+          "resource_type" => "item",
+          "resource_uid" => "777",
+          "quantity_min" => 100,
+          "quantity_expected" => 300,
+          "quantity_max" => 400,
+          "quantity_variable" => true,
+        )
+      end
     end
 
     describe "reward_groups" do
@@ -872,10 +1013,20 @@ RSpec.describe EventMinigameable do
     end
 
     describe "payment" do
-      it "uses item 80710, quantity = 170 × 12 = 2040" do
+      it "keeps the legacy quantity at max attempts 12 × 170 = 2040" do
         expect(config["payment"]["resource_type"]).to eq("item")
         expect(config["payment"]["resource_uid"]).to eq("80710")
         expect(config["payment"]["quantity"]).to eq(2040)
+      end
+
+      it "uses pair count, heuristic expected attempts, and max open count for the range" do
+        payment = groups.first["payment"]
+        expect(payment).to include(
+          "quantity_min" => 1020,
+          "quantity_expected" => 1870,
+          "quantity_max" => 2040,
+          "quantity_variable" => true,
+        )
       end
     end
 
@@ -943,4 +1094,372 @@ RSpec.describe EventMinigameable do
       end
     end
   end
+
+  # ──────────────────────────────────────────────────────────────
+  # Treasure normalization — deterministic per-round treasure totals
+  # ──────────────────────────────────────────────────────────────
+  describe "Treasure normalization" do
+    def build_treasure_round(round:, reward_ids:, reward_amounts:)
+      {
+        "TreasureRound" => round,
+        "TreasureRoundSize" => [9, 5],
+        "RewardId" => reward_ids,
+        "RewardAmount" => reward_amounts,
+        "CellCheckGoods" => {
+          "ConsumeParcelId" => [80470],
+          "ConsumeParcelAmount" => [250],
+          "ConsumeParcelTypeStr" => ["Item"],
+        },
+      }
+    end
+
+    def build_treasure_reward(reward_id:, reward_ids:, reward_amounts:, reward_types:)
+      [
+        reward_id.to_s,
+        {
+          "Id" => reward_id,
+          "CellUnderImageWidth" => 2,
+          "CellUnderImageHeight" => 1,
+          "RewardParcelId" => reward_ids,
+          "RewardParcelAmount" => reward_amounts,
+          "RewardParcelTypeStr" => reward_types,
+        },
+      ]
+    end
+
+    def build_treasure_ec(rounds:, rewards:, loop_round: 2)
+      raw = {
+        "season" => { "EventContentTypeStr" => ["Treasure"] },
+        "treasure" => {
+          "info" => [{ "LoopRound" => loop_round }],
+          "round" => rounds,
+          "reward" => rewards.to_h,
+        },
+      }
+      EventContent.new(uid: "840", baql_id: "baql::events::840", raw_data_first: raw)
+    end
+
+    let(:rounds) do
+      [
+        build_treasure_round(round: 1, reward_ids: [1001, 1002], reward_amounts: [2, 3]),
+        build_treasure_round(round: 2, reward_ids: [1002], reward_amounts: [4]),
+      ]
+    end
+    let(:rewards) do
+      [
+        build_treasure_reward(reward_id: 1001, reward_ids: [80, 1], reward_amounts: [5, 1000], reward_types: %w[Item Currency]),
+        build_treasure_reward(reward_id: 1002, reward_ids: [80, 999], reward_amounts: [2, 1], reward_types: %w[Item GachaGroup]),
+      ]
+    end
+    let(:ec)     { build_treasure_ec(rounds: rounds, rewards: rewards) }
+    let(:config) { ec.minigame_configs.first }
+    let(:groups) { config["reward_groups"] }
+
+    it "returns minigame_type treasure_hunt" do
+      expect(config["minigame_type"]).to eq("treasure_hunt")
+    end
+
+    it "uses the first round expected cost as the legacy payment quantity" do
+      expect(config["payment"]["resource_type"]).to eq("item")
+      expect(config["payment"]["resource_uid"]).to eq("80470")
+      expect(config["payment"]["quantity"]).to eq(6_875)
+    end
+
+    it "adds per-round payment ranges" do
+      round1 = groups.find { |g| g.dig("condition", "values") == [1] }
+      round2 = groups.find { |g| g.dig("condition", "type") == "gte" }
+
+      expect(round1["payment"]).to include(
+        "resource_type" => "item",
+        "resource_uid" => "80470",
+        "quantity_min" => 2_500,
+        "quantity_expected" => 6_875,
+        "quantity_max" => 11_250,
+        "quantity_variable" => true,
+      )
+      expect(round2["payment"]).to include(
+        "quantity_min" => 2_000,
+        "quantity_expected" => 6_625,
+        "quantity_max" => 11_250,
+      )
+    end
+
+    context "when treasures fill the whole board" do
+      let(:rounds) do
+        [
+          build_treasure_round(round: 1, reward_ids: [1001], reward_amounts: [45]),
+        ]
+      end
+      let(:rewards) do
+        [
+          [
+            "1001",
+            {
+              "Id" => 1001,
+              "CellUnderImageWidth" => 1,
+              "CellUnderImageHeight" => 1,
+              "RewardParcelId" => [80],
+              "RewardParcelAmount" => [1],
+              "RewardParcelTypeStr" => %w[Item],
+            },
+          ],
+        ]
+      end
+
+      it "marks the payment range as non-variable" do
+        expect(groups.first["payment"]).to include(
+          "quantity_min" => 11_250,
+          "quantity_expected" => 11_250,
+          "quantity_max" => 11_250,
+          "quantity_variable" => false,
+        )
+      end
+    end
+
+    it "sums every treasure in the round by RewardAmount" do
+      rewards = groups.find { |g| g.dig("condition", "values") == [1] }["rewards"]
+
+      expect(qty(rewards, "item", 80)).to eq(16.0)
+      expect(qty(rewards, "currency", 1)).to eq(2000.0)
+    end
+
+    it "filters unknown parcel types" do
+      rewards = groups.find { |g| g.dig("condition", "type") == "gte" }["rewards"]
+
+      expect(qty(rewards, "item", 80)).to eq(8.0)
+      expect(rewards.map { |r| r["resource_type"] }).not_to include("gachagroup")
+    end
+
+    it "uses gte condition for the loop round" do
+      group = groups.find { |g| g.dig("condition", "type") == "gte" }
+
+      expect(group["condition"]["value"]).to eq(2)
+    end
+
+    context "when treasure key is absent" do
+      subject(:ec) do
+        raw = { "season" => { "EventContentTypeStr" => ["Treasure"] } }
+        EventContent.new(uid: "840", baql_id: "baql::events::840", raw_data_first: raw)
+      end
+
+      it "returns an empty array" do
+        expect(ec.minigame_configs).to eq([])
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # event 840 fixture data — Treasure
+  # ──────────────────────────────────────────────────────────────
+  describe "event 840 real data (Treasure)" do
+    let(:raw)     { JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/event.840.json.gz"))) }
+    let(:ec)      { EventContent.new(uid: "840", baql_id: "baql::events::840", raw_data_first: raw) }
+    let(:config)  { ec.minigame_configs.first }
+    let(:groups)  { config["reward_groups"] }
+
+    it "returns minigame_type treasure_hunt" do
+      expect(config["minigame_type"]).to eq("treasure_hunt")
+    end
+
+    it "uses item 80470 with the first round expected cost as the legacy payment quantity" do
+      expect(config["payment"]["resource_type"]).to eq("item")
+      expect(config["payment"]["resource_uid"]).to eq("80470")
+      expect(config["payment"]["quantity"]).to eq(8_750)
+    end
+
+    it "produces 7 groups (rounds 1-6 exact, round 7 gte)" do
+      expect(groups.length).to eq(7)
+      expect(groups.select { |g| g.dig("condition", "type") == "exact" }.length).to eq(6)
+      expect(groups.find { |g| g.dig("condition", "type") == "gte" }["condition"]["value"]).to eq(7)
+    end
+
+    describe "round 1 reward totals" do
+      let(:group) { groups.find { |g| g.dig("condition", "values") == [1] } }
+      let(:rewards) { group["rewards"] }
+
+      it "sets min/expected/max payment quantities" do
+        expect(group["payment"]).to include(
+          "quantity_min" => 6_250,
+          "quantity_expected" => 8_750,
+          "quantity_max" => 11_250,
+        )
+      end
+
+      it "sums item(80473) from all treasures" do
+        expect(qty(rewards, "item", 80473)).to eq(30.0)
+      end
+
+      it "sums equipment(1) from all treasures" do
+        expect(qty(rewards, "equipment", 1)).to eq(220.0)
+      end
+    end
+
+    describe "round 7 reward totals (loop)" do
+      let(:group) { groups.find { |g| g.dig("condition", "type") == "gte" } }
+      let(:rewards) { group["rewards"] }
+
+      it "sets min/expected/max payment quantities" do
+        expect(group["payment"]).to include(
+          "quantity_min" => 7_250,
+          "quantity_expected" => 9_250,
+          "quantity_max" => 11_250,
+        )
+      end
+
+      it "sums loop-round item(12)" do
+        expect(qty(rewards, "item", 12)).to eq(27.0)
+      end
+
+      it "sums loop-round equipment(1)" do
+        expect(qty(rewards, "equipment", 1)).to eq(40.0)
+      end
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # ClueSearch normalization — per-round multi-payment costs
+  # ──────────────────────────────────────────────────────────────
+  describe "ClueSearch normalization" do
+    let(:raw) do
+      {
+        "season" => { "EventContentTypeStr" => ["ClueSearch"] },
+        "clue" => {
+          "round" => [
+            {
+              "Round" => 1,
+              "IsLoop" => false,
+              "ClueId" => [80804, 80805, 80805],
+              "ClueCostAmount" => [3, 2, 4],
+              "Reward" => {
+                "RewardParcelId" => [1, 80],
+                "RewardParcelAmount" => [5000, 2],
+                "RewardParcelTypeStr" => %w[Currency Item],
+              },
+            },
+            {
+              "Round" => 2,
+              "IsLoop" => true,
+              "ClueId" => [80804, 80806],
+              "ClueCostAmount" => [5, 1],
+              "Reward" => {
+                "RewardParcelId" => [999, 80],
+                "RewardParcelAmount" => [1, 4],
+                "RewardParcelTypeStr" => %w[GachaGroup Item],
+              },
+            },
+          ],
+        },
+      }
+    end
+    let(:ec) { EventContent.new(uid: "857", baql_id: "baql::events::857", raw_data_first: raw) }
+    let(:config) { ec.minigame_configs.first }
+    let(:groups) { config["reward_groups"] }
+
+    it "returns minigame_type clue_search" do
+      expect(config["minigame_type"]).to eq("clue_search")
+    end
+
+    it "keeps payment as the first representative payment for legacy clients" do
+      expect(config["payment"]).to include(
+        "resource_type" => "item",
+        "resource_uid" => "80804",
+        "quantity" => 3,
+      )
+    end
+
+    it "adds all first-round payments to config payments" do
+      expect(config["payments"]).to contain_exactly(
+        include("resource_uid" => "80804", "quantity" => 3),
+        include("resource_uid" => "80805", "quantity" => 6),
+      )
+    end
+
+    it "adds deterministic multi-payment ranges per round" do
+      group = groups.find { |g| g.dig("condition", "values") == [1] }
+
+      expect(group["payment"]).to include("resource_uid" => "80804", "quantity_min" => 3)
+      expect(group["payments"]).to contain_exactly(
+        include(
+          "resource_type" => "item",
+        "resource_uid" => "80804",
+        "quantity_min" => 3,
+        "quantity_expected" => 3,
+        "quantity_max" => 3,
+        "quantity_variable" => false,
+      ),
+      include(
+        "resource_type" => "item",
+        "resource_uid" => "80805",
+        "quantity_min" => 6,
+        "quantity_expected" => 6,
+        "quantity_max" => 6,
+        "quantity_variable" => false,
+      ),
+      )
+    end
+
+    it "normalizes round rewards and filters unknown parcel types" do
+      round1_rewards = groups.find { |g| g.dig("condition", "values") == [1] }["rewards"]
+      round2_rewards = groups.find { |g| g.dig("condition", "type") == "gte" }["rewards"]
+
+      expect(qty(round1_rewards, "currency", 1)).to eq(5000.0)
+      expect(qty(round1_rewards, "item", 80)).to eq(2.0)
+      expect(qty(round2_rewards, "item", 80)).to eq(4.0)
+      expect(round2_rewards.map { |r| r["resource_type"] }).not_to include("gachagroup")
+    end
+
+    it "uses gte condition for the loop round" do
+      group = groups.find { |g| g.dig("condition", "type") == "gte" }
+
+      expect(group["condition"]["value"]).to eq(2)
+    end
+  end
+
+  # ──────────────────────────────────────────────────────────────
+  # event 857 fixture data — ClueSearch
+  # ──────────────────────────────────────────────────────────────
+  describe "event 857 real data (ClueSearch)" do
+    let(:raw)     { JSON.parse(ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/event.857.json.gz"))) }
+    let(:ec)      { EventContent.new(uid: "857", baql_id: "baql::events::857", raw_data_first: raw) }
+    let(:config)  { ec.minigame_configs.first }
+    let(:groups)  { config["reward_groups"] }
+
+    it "returns minigame_type clue_search" do
+      expect(config["minigame_type"]).to eq("clue_search")
+    end
+
+    it "keeps the first payment as the legacy representative payment" do
+      expect(config["payment"]).to include(
+        "resource_type" => "item",
+        "resource_uid" => "80804",
+        "quantity" => 3,
+      )
+    end
+
+    it "produces 7 groups (rounds 1-6 exact, round 7 gte)" do
+      expect(groups.length).to eq(7)
+      expect(groups.select { |g| g.dig("condition", "type") == "exact" }.map { |g| g.dig("condition", "values").first }).to eq([1, 2, 3, 4, 5, 6])
+      expect(groups.find { |g| g.dig("condition", "type") == "gte" }["condition"]["value"]).to eq(7)
+    end
+
+    it "sums duplicate clue costs in round 2" do
+      group = groups.find { |g| g.dig("condition", "values") == [2] }
+
+      expect(group["payments"]).to contain_exactly(
+        include("resource_uid" => "80804", "quantity_min" => 3, "quantity_expected" => 3, "quantity_max" => 3),
+        include("resource_uid" => "80805", "quantity_min" => 6, "quantity_expected" => 6, "quantity_max" => 6),
+        include("resource_uid" => "80808", "quantity_min" => 3, "quantity_expected" => 3, "quantity_max" => 3),
+        include("resource_uid" => "80810", "quantity_min" => 3, "quantity_expected" => 3, "quantity_max" => 3),
+      )
+    end
+
+    it "normalizes round 1 reward totals" do
+      rewards = groups.find { |g| g.dig("condition", "values") == [1] }["rewards"]
+
+      expect(qty(rewards, "item", 16020)).to eq(25.0)
+      expect(qty(rewards, "item", 80803)).to eq(25.0)
+      expect(qty(rewards, "currency", 1)).to eq(945_000.0)
+    end
+  end
+
 end
