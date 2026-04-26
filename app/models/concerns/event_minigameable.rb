@@ -12,6 +12,7 @@ module EventMinigameable
     configs << normalize_box_gacha_minigame(raw)      if types.include?("BoxGacha")
     configs << normalize_concentration_minigame(raw)  if types.include?("Concentration")
     configs << normalize_treasure_minigame(raw)       if types.include?("Treasure")
+    configs << normalize_clue_search_minigame(raw)    if types.include?("ClueSearch")
     configs.compact
   end
 
@@ -44,7 +45,7 @@ module EventMinigameable
       end
       .sort_by { |g| sort_key_for_condition(g["condition"]) }
 
-    { "minigame_type" => "card_flip", "payment" => payment, "reward_groups" => reward_groups }
+    build_minigame_config("card_flip", payment, reward_groups)
   end
 
   def normalize_fortune_gacha_minigame(raw)
@@ -61,7 +62,7 @@ module EventMinigameable
     rewards = compute_card_slot_rewards(entries, gacha_groups: raw.dig("icons", "GachaGroup"))
     reward_groups = [build_reward_group({ "type" => "subsequent" }, rewards, payment_range(payment))]
 
-    { "minigame_type" => "fortune_gacha", "payment" => payment, "reward_groups" => reward_groups }
+    build_minigame_config("fortune_gacha", payment, reward_groups)
   end
 
   def normalize_box_gacha_minigame(raw)
@@ -111,7 +112,7 @@ module EventMinigameable
       build_reward_group(condition, rewards, payment_range(payment))
     end
 
-    { "minigame_type" => "box_gacha", "payment" => payment, "reward_groups" => reward_groups }
+    build_minigame_config("box_gacha", payment, reward_groups)
   end
 
   def normalize_concentration_minigame(raw)
@@ -124,10 +125,11 @@ module EventMinigameable
     return nil unless info && cards && rewards
 
     cost = info["CostGoods"]
+    payment_range = concentration_payment_range(info)
     payment = {
       "resource_type" => cost["ConsumeParcelTypeStr"]&.first&.downcase,
       "resource_uid"  => cost["ConsumeParcelId"]&.first&.to_s,
-      "quantity"      => cost["ConsumeParcelAmount"]&.first.to_i * info["MaxCardOpenCount"].to_i,
+      "quantity"      => payment_range["quantity_expected"],
     }
 
     rarity_counts = cards.each_with_object(Hash.new(0)) { |c, h| h[c["Rarity"]] += 1 }
@@ -173,10 +175,10 @@ module EventMinigameable
         { "type" => "exact", "values" => [round] }
       end
 
-      build_reward_group(condition, combined_rewards, payment_range(payment))
+      build_reward_group(condition, combined_rewards, payment_range)
     end
 
-    { "minigame_type" => "concentration", "payment" => payment, "reward_groups" => reward_groups }
+    build_minigame_config("concentration", payment, reward_groups)
   end
 
   def normalize_treasure_minigame(raw)
@@ -230,11 +232,51 @@ module EventMinigameable
       build_reward_group(condition, normalized_rewards, treasure_payment_range(round, rewards))
     end
 
-    { "minigame_type" => "treasure_hunt", "payment" => payment, "reward_groups" => reward_groups }
+    build_minigame_config("treasure_hunt", payment, reward_groups)
   end
 
-  def build_reward_group(condition, rewards, payment)
-    { "condition" => condition, "payment" => payment, "rewards" => rewards }
+  def normalize_clue_search_minigame(raw)
+    clue = raw["clue"].presence
+    return nil unless clue
+
+    rounds = clue["round"].presence
+    return nil unless rounds
+
+    first_payments = clue_round_payments(rounds.first)
+    first_payment = first_payments.first
+    return nil unless first_payment
+
+    loop_round = rounds.find { |round| round["IsLoop"] }&.dig("Round")
+
+    reward_groups = rounds.sort_by { |r| r["Round"] }.map do |round|
+      payments = clue_round_payments(round)
+      rewards = normalize_reward_parcels(round["Reward"])
+      condition = if round["Round"] == loop_round
+        { "type" => "gte", "value" => round["Round"] }
+      else
+        { "type" => "exact", "values" => [round["Round"]] }
+      end
+
+      build_reward_group(condition, rewards, payments.first, payments)
+    end
+
+    build_minigame_config("clue_search", first_payment, reward_groups, first_payments)
+  end
+
+  def build_minigame_config(minigame_type, payment, reward_groups, payments = nil)
+    # `payment` is a legacy representative value kept for older clients.
+    # New clients should use `payments`, and per-round clients should prefer reward group payments.
+    {
+      "minigame_type" => minigame_type,
+      "payment" => payment,
+      "payments" => payments || [payment],
+      "reward_groups" => reward_groups,
+    }
+  end
+
+  def build_reward_group(condition, rewards, payment, payments = nil)
+    # `payment` is a legacy representative value kept for older clients.
+    { "condition" => condition, "payment" => payment, "payments" => payments || [payment], "rewards" => rewards }
   end
 
   def payment_range(payment)
@@ -244,6 +286,33 @@ module EventMinigameable
       "quantity_min"      => payment["quantity"],
       "quantity_expected" => payment["quantity"],
       "quantity_max"      => payment["quantity"],
+      "quantity_variable" => false,
+    }
+  end
+
+  def concentration_payment_range(info)
+    cost = info["CostGoods"]
+    attempt_cost = cost["ConsumeParcelAmount"]&.first.to_i
+    min_attempts = info["MaxCardPairCount"].to_i
+    max_attempts = info["MaxCardOpenCount"].to_i
+    # Heuristic: regular concentration boards are blind pair-matching games, so players
+    # usually spend almost all attempts. Fall back to midpoint for non-standard layouts.
+    expected_attempts = if max_attempts == min_attempts * 2
+      max_attempts - 1
+    else
+      ((min_attempts + max_attempts) / 2.0).ceil
+    end
+    quantity_min = min_attempts * attempt_cost
+    quantity_expected = expected_attempts * attempt_cost
+    quantity_max = max_attempts * attempt_cost
+
+    {
+      "resource_type" => cost["ConsumeParcelTypeStr"]&.first&.downcase,
+      "resource_uid"  => cost["ConsumeParcelId"]&.first&.to_s,
+      "quantity_min"      => quantity_min,
+      "quantity_expected" => quantity_expected,
+      "quantity_max"      => quantity_max,
+      "quantity_variable" => quantity_min != quantity_max,
     }
   end
 
@@ -268,7 +337,50 @@ module EventMinigameable
       "quantity_min"      => quantity_min,
       "quantity_expected" => ((quantity_min + quantity_max) / 2.0).ceil,
       "quantity_max"      => quantity_max,
+      "quantity_variable" => true,
     }
+  end
+
+  def clue_round_payments(round)
+    totals = Hash.new(0)
+
+    round["ClueId"].each_with_index do |uid, index|
+      totals[uid.to_s] += round["ClueCostAmount"][index].to_i
+    end
+
+    totals
+      .map do |uid, quantity|
+        {
+          "resource_type" => "item",
+          "resource_uid"  => uid,
+          "quantity" => quantity,
+          "quantity_min" => quantity,
+          "quantity_expected" => quantity,
+          "quantity_max" => quantity,
+          "quantity_variable" => false,
+        }
+      end
+      .sort_by { |payment| payment["resource_uid"].to_i }
+  end
+
+  def normalize_reward_parcels(entry)
+    return [] unless entry
+
+    totals = Hash.new(0.0)
+    meta = {}
+
+    entry["RewardParcelId"].each_with_index do |uid, index|
+      type_str = entry["RewardParcelTypeStr"][index]&.downcase
+      next unless EventContent::KNOWN_REWARD_TYPES.include?(type_str)
+
+      key = "#{type_str}::#{uid}"
+      totals[key] += entry["RewardParcelAmount"][index].to_f
+      meta[key] ||= { "resource_type" => type_str, "resource_uid" => uid.to_s }
+    end
+
+    totals
+      .map { |key, qty| meta[key].merge("quantity" => qty) }
+      .sort_by { |r| [r["resource_type"], r["resource_uid"].to_i] }
   end
 
   def compute_card_slot_rewards(cards, gacha_groups: nil)

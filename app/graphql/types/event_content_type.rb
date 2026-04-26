@@ -23,6 +23,7 @@ module Types
     field :quantity_min, Int, null: false
     field :quantity_expected, Int, null: false
     field :quantity_max, Int, null: false
+    field :quantity_variable, Boolean, null: false
 
     def resource
       klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
@@ -30,6 +31,7 @@ module Types
 
       klass_proc.call.find_by(uid: object["resource_uid"])
     end
+
   end
 
   class EventMinigameRewardItemType < Types::Base::Object
@@ -60,13 +62,17 @@ module Types
 
   class EventMinigameRewardGroupType < Types::Base::Object
     field :condition, Types::EventMinigameSlotConditionType, null: false
-    field :payment,   Types::EventMinigamePaymentRangeType,  null: false
+    field :payment,   Types::EventMinigamePaymentRangeType,  null: false,
+      deprecation_reason: "Use `payments` instead. This field is a legacy representative payment."
+    field :payments,  [Types::EventMinigamePaymentRangeType], null: false
     field :rewards,   [Types::EventMinigameRewardItemType],  null: false
   end
 
   class EventMinigameConfigType < Types::Base::Object
     field :minigame_type,  String,                                null: false
-    field :payment,        Types::EventMinigamePaymentType,       null: false
+    field :payment,        Types::EventMinigamePaymentType,       null: false,
+      deprecation_reason: "Use `payments` or `rewardGroups.payments` instead. This field is a legacy representative payment."
+    field :payments,       [Types::EventMinigamePaymentType],     null: false
     field :reward_groups,  [Types::EventMinigameRewardGroupType], null: false
   end
 
