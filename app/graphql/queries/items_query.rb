@@ -4,7 +4,9 @@ module Queries
 
     argument :uids, [String], required: false
 
-    def resolve(uids: [])
+    def resolve(uids: nil)
+      return Item.order(:uid) if uids.nil?
+
       Item.where(uid: uids)
     end
   end
