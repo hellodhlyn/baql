@@ -34,14 +34,6 @@ class RaidBoss < ApplicationRecord
     [ 1, "extreme"],
   ].freeze
 
-  # DEPRECATED: raid_videos.raid_boss는 구 Raid 모델의 boss 필드 값을 그대로 사용하고 있어
-  # RaidBoss.uid와 명칭이 다른 경우를 임시로 매핑. Raid 모델 제거 시 함께 정리 필요.
-  VIDEO_BOSS_NAME_OVERRIDES = {
-    "kurokage"     => "myouki-kurokage",
-    "kaiten"       => "kaiten-fx-mk0",
-    "perorodzilla" => "perorozilla",
-  }.freeze
-
   belongs_to :event_content, foreign_key: :event_content_uid, primary_key: :uid, optional: true
   has_many :schedules, class_name: "RaidSchedule", foreign_key: :raid_boss_uid, primary_key: :uid
 

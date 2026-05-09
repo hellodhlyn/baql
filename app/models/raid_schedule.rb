@@ -35,11 +35,6 @@ class RaidSchedule < ApplicationRecord
     update!(start_at: ecs.start_at, end_at: ecs.end_at)
   end
 
-  def videos
-    video_boss_name = RaidBoss::VIDEO_BOSS_NAME_OVERRIDES.fetch(raid_boss_uid, raid_boss_uid)
-    RaidVideo.where(raid_type: raid_type, raid_boss: video_boss_name, raid_terrain: terrain)
-  end
-
   def duplicate!(new_region:, new_season_index:)
     new_uid = "#{new_region}_#{self.raid_type}_#{new_season_index}"
     RaidSchedule.create!(self.attributes
