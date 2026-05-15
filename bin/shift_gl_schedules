@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../config/environment"
+require "optparse"
+
+options = {
+  cutoff: nil,
+  days: nil,
+  mode: nil,
+}
+
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: bin/shift_gl_schedules --cutoff ISO8601 --days DAYS (--dry-run | --apply)"
+
+  opts.on("--cutoff VALUE", "Inclusive cutoff datetime, e.g. 2026-06-02T00:00:00+09:00") do |value|
+    options[:cutoff] = Time.zone.parse(value)
+  rescue ArgumentError
+    raise OptionParser::InvalidArgument, "--cutoff must be a parseable datetime"
+  end
+
+  opts.on("--days VALUE", Integer, "Number of days to shift schedules") do |value|
+    options[:days] = value
+  end
+
+  opts.on("--dry-run", "Print target changes and roll them back") do
+    options[:mode] = :dry_run
+  end
+
+  opts.on("--apply", "Apply and commit target changes") do
+    options[:mode] = :apply
+  end
+end
+
+parser.parse!(ARGV)
+
+missing = []
+missing << "--cutoff" unless options[:cutoff]
+missing << "--days" unless options[:days]
+missing << "--dry-run or --apply" unless options[:mode]
+
+if missing.any?
+  warn parser
+  abort "Missing required option(s): #{missing.join(", ")}"
+end
+
+abort "--days must be a positive integer" unless options[:days].positive?
+
+result = Maintenance::GlScheduleShift.new(
+  cutoff: options[:cutoff],
+  shift_by: options[:days].days,
+  dry_run: options[:mode] == :dry_run,
+).call
+
+puts "[GL schedule shift]"
+puts "cutoff: #{options[:cutoff].iso8601}"
+puts "shift_by: #{options[:days]} day(s)"
+puts "mode: #{result.dry_run ? "dry-run" : "apply"}"
+puts "target_rows: #{result.total_rows}"
+
+grouped_updates = result.schedule_updates.group_by(&:label)
+grouped_updates.each do |label, updates|
+  puts
+  puts "#{label}: #{updates.size} row(s)"
+
+  updates.first(10).each do |update|
+    puts "  - #{update.identifier}"
+    update.changes.each do |column, (before, after)|
+      puts "      #{column}: #{before&.iso8601 || "nil"} -> #{after&.iso8601 || "nil"}"
+    end
+  end
+
+  puts "  ... #{updates.size - 10} more row(s)" if updates.size > 10
+end
+
+puts
+puts "student release_at updates: #{result.student_release_updates.size} row(s)"
+result.student_release_updates.first(20).each do |update|
+  puts "  - uid=#{update.uid}, recruitment_group_uid=#{update.recruitment_group_uid}: #{update.before&.iso8601 || "nil"} -> #{update.after.iso8601}"
+end
+puts "  ... #{result.student_release_updates.size - 20} more row(s)" if result.student_release_updates.size > 20
+
+puts
+if result.dry_run
+  puts "DRY RUN: rolled back. Re-run with --apply to commit."
+else
+  puts "APPLIED: committed GL schedule shift."
+end
