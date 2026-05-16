@@ -71,6 +71,18 @@ class Student < ApplicationRecord
     self.where("multiclass_uid is not null")
   end
 
+  def self.sync_recruitment_dates!(uids)
+    Array(uids).compact.uniq.each do |uid|
+      student = lock.find_by(uid: uid)
+      next unless student
+
+      student.update!(
+        release_at: first_recruitment_start_at(uid),
+        archive_at: first_archive_recruitment_start_at(uid),
+      )
+    end
+  end
+
   def released
     self.release_at.present? && self.release_at < Time.zone.now
   end
@@ -140,6 +152,25 @@ class Student < ApplicationRecord
       schale_db_id: row["PathName"],
       raw_data:     row,
     )
+  end
+
+  def self.recruitments_for_student(uid)
+    Recruitment
+      .joins(:recruitment_group)
+      .where(student_uid: uid)
+  end
+
+  def self.first_recruitment_start_at(uid)
+    recruitments_for_student(uid)
+      .reorder("recruitment_groups.start_at ASC", "recruitment_groups.uid ASC")
+      .pick("recruitment_groups.start_at")
+  end
+
+  def self.first_archive_recruitment_start_at(uid)
+    recruitments_for_student(uid)
+      .where(recruitment_type: Recruitment::ARCHIVE_RECRUITMENT_TYPES)
+      .reorder("recruitment_groups.start_at ASC", "recruitment_groups.uid ASC")
+      .pick("recruitment_groups.start_at")
   end
 
   def self.parse_birthday(birthday_str)

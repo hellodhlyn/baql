@@ -32,6 +32,25 @@ RSpec.describe Mutations::Recruitments::CreateRecruitment, type: :graphql do
     expect(Recruitment.find_by(uid: "r-001")).to be_present
   end
 
+  it "updates the student's recruitment dates" do
+    student = FactoryBot.create(:student, uid: "student-1", release_at: nil)
+    group.update!(start_at: Time.zone.parse("2026-04-01 02:00:00"))
+
+    result = execute_graphql_as_admin(mutation, variables: {
+      input: {
+        uid: "r-archive",
+        recruitmentGroupUid: group.uid,
+        studentUid: student.uid,
+        studentName: "카요코",
+        recruitmentType: "archive",
+      },
+    })
+
+    expect(result.dig("data", "createRecruitment", "errors")).to be_empty
+    expect(student.reload.release_at).to eq(group.start_at)
+    expect(student.archive_at).to eq(group.start_at)
+  end
+
   it "returns an error when recruitment_group_uid does not exist" do
     result = execute_graphql_as_admin(mutation, variables: {
       input: {

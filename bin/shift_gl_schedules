@@ -74,9 +74,16 @@ grouped_updates.each do |label, updates|
 end
 
 puts
-puts "student release_at updates: #{result.student_release_updates.size} row(s)"
+puts "student recruitment date updates: #{result.student_release_updates.size} row(s)"
 result.student_release_updates.first(20).each do |update|
-  puts "  - uid=#{update.uid}, recruitment_group_uid=#{update.recruitment_group_uid}: #{update.before&.iso8601 || "nil"} -> #{update.after.iso8601}"
+  puts "  - uid=#{update.uid}, recruitment_group_uid=#{update.recruitment_group_uid}"
+  update.before.each_key do |field|
+    before = update.before[field]
+    after = update.after[field]
+    next if before == after
+
+    puts "      #{field}: #{before&.iso8601 || "nil"} -> #{after&.iso8601 || "nil"}"
+  end
 end
 puts "  ... #{result.student_release_updates.size - 20} more row(s)" if result.student_release_updates.size > 20
 

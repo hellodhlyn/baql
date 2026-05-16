@@ -98,4 +98,18 @@ RSpec.describe RecruitmentGroup, type: :model do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "student recruitment date sync" do
+    it "updates student dates after start_at changes" do
+      student = FactoryBot.create(:student, uid: "student-1", release_at: nil, archive_at: nil)
+      group = FactoryBot.create(:recruitment_group, start_at: Time.zone.parse("2026-04-01 02:00:00"))
+      FactoryBot.create(:recruitment, recruitment_group_uid: group.uid, student_uid: student.uid, recruitment_type: "archive")
+      next_start_at = Time.zone.parse("2026-05-01 02:00:00")
+
+      group.update!(start_at: next_start_at)
+
+      expect(student.reload.release_at).to eq(next_start_at)
+      expect(student.archive_at).to eq(next_start_at)
+    end
+  end
 end

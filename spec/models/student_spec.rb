@@ -101,6 +101,36 @@ RSpec.describe Student, type: :model do
     end
   end
 
+  describe ".sync_recruitment_dates!" do
+    let!(:student) { FactoryBot.create(:student, uid: "student-1", release_at: nil) }
+    let!(:later_group) { FactoryBot.create(:recruitment_group, uid: "later", start_at: Time.zone.parse("2026-04-10 02:00:00")) }
+    let!(:first_group) { FactoryBot.create(:recruitment_group, uid: "first", start_at: Time.zone.parse("2026-04-01 02:00:00")) }
+    let!(:archive_group) { FactoryBot.create(:recruitment_group, uid: "archive", start_at: Time.zone.parse("2026-05-01 02:00:00")) }
+
+    before do
+      FactoryBot.create(:recruitment, uid: "r-later", recruitment_group_uid: later_group.uid, student_uid: student.uid, recruitment_type: "limited")
+      FactoryBot.create(:recruitment, uid: "r-first", recruitment_group_uid: first_group.uid, student_uid: student.uid, recruitment_type: "usual")
+      FactoryBot.create(:recruitment, uid: "r-archive", recruitment_group_uid: archive_group.uid, student_uid: student.uid, recruitment_type: "archive")
+    end
+
+    it "sets release_at from the first recruitment and archive_at from the first archive-like recruitment" do
+      described_class.sync_recruitment_dates!([student.uid])
+
+      expect(student.reload.release_at).to eq(first_group.start_at)
+      expect(student.archive_at).to eq(archive_group.start_at)
+    end
+
+    it "clears dates when the student has no matching recruitments" do
+      described_class.sync_recruitment_dates!([student.uid])
+      Recruitment.where(student_uid: student.uid).update_all(student_uid: nil)
+
+      described_class.sync_recruitment_dates!([student.uid])
+
+      expect(student.reload.release_at).to be_nil
+      expect(student.archive_at).to be_nil
+    end
+  end
+
   describe "#gear" do
     let!(:item_5017) { FactoryBot.create(:item, uid: "5017", name: "안티키테라 장치", rarity: 3) }
     let!(:item_150) { FactoryBot.create(:item, uid: "150", name: "네브라 디스크", rarity: 2) }

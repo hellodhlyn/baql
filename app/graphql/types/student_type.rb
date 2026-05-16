@@ -17,6 +17,8 @@ module Types
     field :position, Types::Enums::PositionType, null: false
     field :birthday, GraphQL::Types::ISO8601Date, null: true
     field :equipments, [String], null: false
+    field :release_at, GraphQL::Types::ISO8601DateTime, null: true
+    field :archive_at, GraphQL::Types::ISO8601DateTime, null: true
     field :released, Boolean, null: false
     field :order, Int, null: false
     field :schale_db_id, String, null: true

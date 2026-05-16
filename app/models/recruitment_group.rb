@@ -4,6 +4,8 @@ class RecruitmentGroup < ApplicationRecord
 
   has_many :recruitments, primary_key: :uid, foreign_key: :recruitment_group_uid
 
+  after_save :sync_student_recruitment_dates, if: :saved_change_to_start_at?
+
   validates :uid, presence: true, uniqueness: true
   validates :baql_id, presence: true
   validates :content_type,     inclusion: { in: CONTENT_TYPES },               allow_nil: true
@@ -14,5 +16,11 @@ class RecruitmentGroup < ApplicationRecord
     when "event_content" then EventContent.find_by(uid: content_uid)
     when "main_story_part" then MainStoryPart.find_by(uid: content_uid)
     end
+  end
+
+  private
+
+  def sync_student_recruitment_dates
+    Student.sync_recruitment_dates!(recruitments.where.not(student_uid: nil).distinct.pluck(:student_uid))
   end
 end

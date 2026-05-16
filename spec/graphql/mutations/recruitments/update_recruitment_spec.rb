@@ -27,6 +27,28 @@ RSpec.describe Mutations::Recruitments::UpdateRecruitment, type: :graphql do
     expect(recruitment.reload.pickup).to be false
   end
 
+  it "updates recruitment dates for both the previous and current student" do
+    old_student = FactoryBot.create(:student, uid: "old-student", release_at: nil)
+    new_student = FactoryBot.create(:student, uid: "new-student", release_at: nil)
+    group = recruitment.recruitment_group
+    group.update!(start_at: Time.zone.parse("2026-04-01 02:00:00"))
+    recruitment.update!(student_uid: old_student.uid, recruitment_type: "limited")
+
+    result = execute_graphql_as_admin(mutation, variables: {
+      input: {
+        uid: recruitment.uid,
+        studentUid: new_student.uid,
+        recruitmentType: "archive",
+      },
+    })
+
+    expect(result.dig("data", "updateRecruitment", "errors")).to be_empty
+    expect(old_student.reload.release_at).to be_nil
+    expect(old_student.archive_at).to be_nil
+    expect(new_student.reload.release_at).to eq(group.start_at)
+    expect(new_student.archive_at).to eq(group.start_at)
+  end
+
   it "returns an error when uid does not exist" do
     result = execute_graphql_as_admin(mutation, variables: {
       input: { uid: "nonexistent", studentName: "치나츠" },

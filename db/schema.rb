@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_20_130000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_15_001000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -438,6 +438,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_130000) do
     t.string "multiclass_uid"
     t.string "schale_db_id"
     t.datetime "release_at"
+    t.datetime "archive_at"
     t.string "tactic_role"
     t.string "position"
     t.date "birthday"

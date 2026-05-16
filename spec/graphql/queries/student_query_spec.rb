@@ -26,6 +26,29 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
     end
   end
 
+  describe "student recruitment date fields" do
+    it "returns releaseAt and archiveAt" do
+      release_at = Time.zone.parse("2026-04-01 02:00:00")
+      archive_at = Time.zone.parse("2026-05-01 02:00:00")
+      student = FactoryBot.create(:student, uid: "student-1", release_at: release_at, archive_at: archive_at)
+
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
+        query($uid: String!) {
+          student(uid: $uid) {
+            releaseAt
+            archiveAt
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "student")).to eq(
+        "releaseAt" => release_at.iso8601,
+        "archiveAt" => archive_at.iso8601,
+      )
+    end
+  end
+
   describe "student skills field" do
     let!(:student) { FactoryBot.create(:student, uid: "13005", raw_data: student_skills) }
 
