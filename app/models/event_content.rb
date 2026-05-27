@@ -193,6 +193,8 @@ class EventContent < ApplicationRecord
     goods = item["Goods"]&.first
     return nil unless goods
 
+    shop_amount = item["PurchaseCountLimit"]&.then { |n| n > 0 ? n : nil }
+
     {
       "uid"                     => item["Id"].to_s,
       "resource_type"           => goods["ParcelTypeStr"]&.first&.downcase,
@@ -201,7 +203,36 @@ class EventContent < ApplicationRecord
       "payment_resource_type"   => goods["ConsumeParcelTypeStr"]&.first&.downcase,
       "payment_resource_uid"    => goods["ConsumeParcelId"]&.first&.to_s,
       "payment_resource_amount" => goods["ConsumeParcelAmount"]&.first,
-      "shop_amount"             => item["PurchaseCountLimit"]&.then { |n| n > 0 ? n : nil },
+      "shop_amount"             => shop_amount,
+      "purchase_tiers"          => normalize_purchase_tiers(goods, shop_amount),
+    }
+  end
+
+  def normalize_purchase_tiers(goods, shop_amount)
+    amounts = goods["ConsumeExtraAmount"]
+    steps = goods["ConsumeExtraStep"]
+
+    if amounts.present? && steps.present?
+      start_quantity = 1
+
+      amounts.zip(steps).each_with_index.map do |(amount, quantity), index|
+        tier = normalize_purchase_tier(goods, index, start_quantity, quantity, amount)
+        start_quantity += quantity.to_i
+        tier
+      end
+    else
+      normalize_purchase_tier(goods, 0, 1, shop_amount, goods["ConsumeParcelAmount"]&.first).then { |tier| [tier] }
+    end
+  end
+
+  def normalize_purchase_tier(goods, index, start_quantity, quantity, unit_price)
+    {
+      "tier_index"            => index,
+      "start_quantity"        => start_quantity,
+      "quantity"              => quantity,
+      "unit_price"            => unit_price,
+      "payment_resource_type" => goods["ConsumeParcelTypeStr"]&.first&.downcase,
+      "payment_resource_uid"  => goods["ConsumeParcelId"]&.first&.to_s,
     }
   end
 

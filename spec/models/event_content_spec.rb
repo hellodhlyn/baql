@@ -175,6 +175,96 @@ RSpec.describe EventContent, type: :model do
         expect(item["payment_resource_type"]).to eq("item")
         expect(item["payment_resource_uid"]).to eq("80681")
         expect(item["payment_resource_amount"]).to eq(1)
+        expect(item["purchase_tiers"]).to eq([
+          {
+            "tier_index" => 0,
+            "start_quantity" => 1,
+            "quantity" => 90,
+            "unit_price" => 1,
+            "payment_resource_type" => "item",
+            "payment_resource_uid" => "80681",
+          }
+        ])
+      end
+    end
+
+    describe "purchase_tiers" do
+      let(:tiered_ticket_item) do
+        {
+          "CategoryType" => 13,
+          "Id" => 8540000,
+          "PurchaseCountLimit" => 60,
+          "Goods" => [
+            {
+              "ParcelId" => [19],
+              "ParcelAmount" => [1],
+              "ParcelTypeStr" => ["Currency"],
+              "ConsumeParcelId" => [4],
+              "ConsumeParcelAmount" => [5],
+              "ConsumeParcelTypeStr" => ["Currency"],
+              "ConsumeExtraAmount" => [5, 10, 15, 25, 35, 45],
+              "ConsumeExtraStep" => [10, 10, 10, 10, 10, 10],
+            }
+          ]
+        }
+      end
+
+      let(:raw_data) { { "shop" => { "13" => [tiered_ticket_item] } } }
+
+      it "normalizes extra consume steps as purchase tiers" do
+        item = event_content.shop_resources.first
+
+        expect(item["payment_resource_amount"]).to eq(5)
+        expect(item["purchase_tiers"]).to eq([
+          {
+            "tier_index" => 0,
+            "start_quantity" => 1,
+            "quantity" => 10,
+            "unit_price" => 5,
+            "payment_resource_type" => "currency",
+            "payment_resource_uid" => "4",
+          },
+          {
+            "tier_index" => 1,
+            "start_quantity" => 11,
+            "quantity" => 10,
+            "unit_price" => 10,
+            "payment_resource_type" => "currency",
+            "payment_resource_uid" => "4",
+          },
+          {
+            "tier_index" => 2,
+            "start_quantity" => 21,
+            "quantity" => 10,
+            "unit_price" => 15,
+            "payment_resource_type" => "currency",
+            "payment_resource_uid" => "4",
+          },
+          {
+            "tier_index" => 3,
+            "start_quantity" => 31,
+            "quantity" => 10,
+            "unit_price" => 25,
+            "payment_resource_type" => "currency",
+            "payment_resource_uid" => "4",
+          },
+          {
+            "tier_index" => 4,
+            "start_quantity" => 41,
+            "quantity" => 10,
+            "unit_price" => 35,
+            "payment_resource_type" => "currency",
+            "payment_resource_uid" => "4",
+          },
+          {
+            "tier_index" => 5,
+            "start_quantity" => 51,
+            "quantity" => 10,
+            "unit_price" => 45,
+            "payment_resource_type" => "currency",
+            "payment_resource_uid" => "4",
+          },
+        ])
       end
     end
 

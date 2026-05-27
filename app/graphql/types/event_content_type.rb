@@ -106,12 +106,29 @@ module Types
     end
   end
 
+  class EventContentShopResourcePurchaseTierType < Types::Base::Object
+    field :tier_index,      Int,                      null: false
+    field :start_quantity,  Int,                      null: false
+    field :quantity,        Int,                      null: true
+    field :unit_price,      Int,                      null: false
+    field :payment_resource, Types::ResourceInterface, null: true
+
+    def payment_resource
+      klass_proc = RESOURCE_CLASS_MAP[object["payment_resource_type"]]
+      return nil unless klass_proc && object["payment_resource_uid"]
+
+      klass_proc.call.find_by(uid: object["payment_resource_uid"])
+    end
+  end
+
   class EventContentShopResourceType < Types::Base::Object
     field :uid,                      String,                   null: false
     field :resource,                 Types::ResourceInterface, null: true
     field :resource_amount,          Int,                      null: false
     field :payment_resource,         Types::ResourceInterface, null: true
-    field :payment_resource_amount,  Int,                      null: false
+    field :payment_resource_amount,  Int,                      null: false,
+      deprecation_reason: "Use `purchaseTiers.unitPrice` instead."
+    field :purchase_tiers, [Types::EventContentShopResourcePurchaseTierType], null: false
     field :shop_amount,              Int,                      null: true
 
     def resource
