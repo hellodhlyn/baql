@@ -2,7 +2,7 @@ class RecruitmentGroup < ApplicationRecord
   BAQL_ID_PREFIX = "baql::recruitment_groups::"
   CONTENT_TYPES = ["event_content", "main_story_part"].freeze
 
-  has_many :recruitments, primary_key: :uid, foreign_key: :recruitment_group_uid
+  has_many :recruitments, primary_key: :uid, foreign_key: :recruitment_group_uid, inverse_of: :recruitment_group
 
   after_save :sync_student_recruitment_dates, if: :saved_change_to_start_at?
 

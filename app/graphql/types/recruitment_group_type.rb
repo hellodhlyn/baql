@@ -9,7 +9,11 @@ module Types
     field :recruitments, [Types::RecruitmentType],        null: false
 
     def recruitments
-      object.recruitments.order(:id)
+      if object.association(:recruitments).loaded?
+        object.recruitments.sort_by(&:id)
+      else
+        object.recruitments.order(:id)
+      end
     end
   end
 end

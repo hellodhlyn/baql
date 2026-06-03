@@ -3,7 +3,7 @@ class Recruitment < ApplicationRecord
   RECRUITMENT_TYPES = ["given", "usual", "limited", "fes", "archive", "encore", "recollect"].freeze
   ARCHIVE_RECRUITMENT_TYPES = ["archive", "encore", "recollect"].freeze
 
-  belongs_to :recruitment_group, primary_key: :uid, foreign_key: :recruitment_group_uid
+  belongs_to :recruitment_group, primary_key: :uid, foreign_key: :recruitment_group_uid, inverse_of: :recruitments
   belongs_to :student, primary_key: :uid, foreign_key: :student_uid, optional: true
 
   delegate :start_at, to: :recruitment_group

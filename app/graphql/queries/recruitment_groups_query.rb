@@ -8,7 +8,7 @@ module Queries
 
     def resolve(uids: nil, start_before: nil, end_after: nil)
       scope = RecruitmentGroup
-        .includes(:recruitments, recruitments: :student)
+        .includes(recruitments: :student)
         .order(start_at: :asc)
       scope = scope.where(uid: uids) if uids.present?
       scope = scope.where("start_at <= ?", start_before) if start_before.present?

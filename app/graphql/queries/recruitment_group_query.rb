@@ -6,7 +6,7 @@ module Queries
 
     def resolve(uid:)
       RecruitmentGroup
-        .includes(:recruitments, recruitments: :student)
+        .includes(recruitments: :student)
         .find_by(uid: uid)
     end
   end

@@ -1,6 +1,21 @@
 require "rails_helper"
 
 RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
+  def capture_sql
+    queries = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+      next if payload[:name] == "SCHEMA"
+      next if payload[:sql].match?(/\A(?:BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)/)
+
+      queries << payload
+    end
+
+    result = yield
+    [result, queries]
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
   def query(uid)
     <<~GRAPHQL
       query {
@@ -18,7 +33,24 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
           }
         }
       }
-    GRAPHQL
+      GRAPHQL
+  end
+
+  def create_recruitment_groups_with_students(count, offset: 0)
+    count.times do |group_index|
+      uid_index = offset + group_index
+      group = FactoryBot.create(:recruitment_group, uid: "group-#{uid_index}")
+
+      2.times do |student_index|
+        student = FactoryBot.create(:student, uid: "student-#{uid_index}-#{student_index}")
+        FactoryBot.create(
+          :recruitment,
+          recruitment_group_uid: group.uid,
+          student_uid: student.uid,
+          student_name: "학생 #{uid_index}-#{student_index}",
+        )
+      end
+    end
   end
 
   describe "find by uid" do
@@ -83,6 +115,65 @@ RSpec.describe Queries::RecruitmentGroupQuery, type: :graphql do
         student_name = result["data"]["recruitmentGroup"]["recruitments"].first["studentName"]
         expect(student_name).to eq("미공개학생")
       end
+    end
+  end
+
+  describe "recruitmentGroups query" do
+    before do
+      create_recruitment_groups_with_students(2)
+    end
+
+    it "uses preloaded recruitments, students, and recruitment groups" do
+      result, queries = capture_sql do
+        execute_graphql(<<~GRAPHQL)
+          query {
+            recruitmentGroups {
+              uid
+              recruitments {
+                since
+                until
+                student {
+                  uid
+                  name
+                }
+              }
+            }
+          }
+        GRAPHQL
+      end
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "recruitmentGroups").size).to eq(2)
+      expect(queries.count { |payload| payload[:name] == "Recruitment Load" }).to eq(1)
+      expect(queries.count { |payload| payload[:name] == "Student Load" }).to eq(1)
+      expect(queries.count { |payload| payload[:name] == "RecruitmentGroup Load" }).to eq(1)
+
+      create_recruitment_groups_with_students(2, offset: 2)
+
+      _result_with_more_groups, queries_with_more_groups = capture_sql do
+        execute_graphql(<<~GRAPHQL)
+          query {
+            recruitmentGroups {
+              uid
+              recruitments {
+                since
+                until
+                student {
+                  uid
+                  name
+                }
+              }
+            }
+          }
+        GRAPHQL
+      end
+
+      expect(queries_with_more_groups.count { |payload| payload[:name] == "Recruitment Load" })
+        .to eq(queries.count { |payload| payload[:name] == "Recruitment Load" })
+      expect(queries_with_more_groups.count { |payload| payload[:name] == "Student Load" })
+        .to eq(queries.count { |payload| payload[:name] == "Student Load" })
+      expect(queries_with_more_groups.count { |payload| payload[:name] == "RecruitmentGroup Load" })
+        .to eq(queries.count { |payload| payload[:name] == "RecruitmentGroup Load" })
     end
   end
 end

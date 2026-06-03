@@ -47,13 +47,17 @@ module Types
 
     field :gear, Types::GearType, null: true
 
-    field :favorite_items, [Types::FavoriteItemType], null: false do
+    field :favorite_items, [Types::FavoriteItemType], null: false, extras: [:lookahead] do
       argument :favorited, Boolean, required: false
     end
-    def favorite_items(favorited: nil)
-      query = StudentFavoriteItem.includes(:item).where(student_uid: object.uid)
-      query = query.where(favorited: favorited) if favorited.present?
-      query.order(favorite_level: :desc)
+    def favorite_items(favorited: nil, lookahead:)
+      dataloader
+        .with(
+          Sources::StudentFavoriteItemsByStudentUid,
+          favorited: favorited,
+          preload_item: lookahead.selects?(:item),
+        )
+        .load(object.uid)
     end
   end
 end
