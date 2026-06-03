@@ -26,8 +26,8 @@ RSpec.describe Mutations::RaidSchedules::UpdateRaidSchedule, type: :graphql do
     expect(schedule.reload.terrain).to eq("outdoor")
   end
 
-  it "updates defense_types" do
-    mutation_with_defense = <<~GRAPHQL
+  it "updates grouped defense_type_sets" do
+    mutation_with_defense_sets = <<~GRAPHQL
       mutation($input: UpdateRaidScheduleInput!) {
         updateRaidSchedule(input: $input) {
           raidSchedule { uid }
@@ -35,15 +35,21 @@ RSpec.describe Mutations::RaidSchedules::UpdateRaidSchedule, type: :graphql do
         }
       }
     GRAPHQL
-    result = execute_graphql_as_admin(mutation_with_defense, variables: {
+
+    result = execute_graphql_as_admin(mutation_with_defense_sets, variables: {
       input: {
         uid: "jp_total_assault_10",
-        defenseTypes: [{ defenseType: "heavy", difficulty: "torment" }],
+        defenseTypeSets: [
+          { defenseTypes: ["light", "special"], difficulty: "lunatic" },
+        ],
       },
     })
+
     data = result.dig("data", "updateRaidSchedule")
     expect(data["errors"]).to be_empty
-    expect(schedule.reload.defense_types.first.defense_type).to eq("heavy")
+    expect(schedule.reload.read_attribute(:defense_types)).to eq([
+      { "defense_types" => ["light", "special"], "difficulty" => "lunatic" },
+    ])
   end
 
   it "returns an error when uid does not exist" do

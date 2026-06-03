@@ -12,20 +12,19 @@ module Mutations
       argument :start_at, GraphQL::Types::ISO8601DateTime, required: false
       argument :end_at, GraphQL::Types::ISO8601DateTime, required: false
       argument :attack_type, Types::Enums::AttackType, required: false
-      argument :defense_types, [Types::Inputs::DefenseTypeInput], required: false
+      argument :defense_type_sets, [Types::Inputs::DefenseTypeSetInput], required: false
       argument :jp_season_index, Integer, required: false
       argument :event_content_run_type, Types::Enums::EventScheduleRunTypeEnum, required: false
 
       field :raid_schedule, Types::RaidScheduleType, null: true
 
-      def resolve(uid:, defense_types: [], **attrs)
-        defense_types_data = defense_types.map { |dt| { "defense_type" => dt.defense_type, "difficulty" => dt.difficulty } }
+      def resolve(uid:, defense_type_sets: [], **attrs)
         schedule = RaidSchedule.new(
           **attrs,
           uid: uid,
           baql_id: "#{RaidSchedule::BAQL_ID_PREFIX}#{uid}",
-          defense_types: defense_types_data,
         )
+        schedule.defense_type_sets = defense_type_sets
         save_record(schedule, raid_schedule: schedule)
       end
     end
