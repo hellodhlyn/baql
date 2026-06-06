@@ -23,19 +23,29 @@ module Types
     field :order, Int, null: false
     field :schale_db_id, String, null: true
 
-    field :recruitments, [Types::RecruitmentType], null: false
-    def recruitments
-      Recruitment.includes(:recruitment_group).where(student_uid: object.uid).order(:id)
+    field :recruitments, [Types::RecruitmentType], null: false, extras: [:lookahead]
+    def recruitments(lookahead:)
+      dataloader
+        .with(
+          Sources::StudentRecruitmentsByStudentUid,
+          preload_student: lookahead.selects?(:student) || lookahead.selects?(:student_name),
+        )
+        .load(object.uid)
     end
-    field :skill_items, [Types::SkillItemType], null: false do
+
+    field :skill_items, [Types::SkillItemType], null: false, extras: [:lookahead] do
       argument :skill_type, Types::Enums::StudentSkillItemTypeEnum, required: false
       argument :skill_level, Int, required: false
     end
-    def skill_items(skill_type: nil, skill_level: nil)
-      query = StudentSkillItem.includes(:item).where(student_uid: object.uid)
-      query = query.where(skill_type: skill_type) if skill_type.present?
-      query = query.where(skill_level: skill_level) if skill_level.present?
-      query.order(skill_type: :asc, skill_level: :asc)
+    def skill_items(skill_type: nil, skill_level: nil, lookahead:)
+      dataloader
+        .with(
+          Sources::StudentSkillItemsByStudentUid,
+          skill_type: skill_type,
+          skill_level: skill_level,
+          preload_item: lookahead.selects?(:item),
+        )
+        .load(object.uid)
     end
 
     field :skills, [Types::SkillType], null: false do
@@ -46,6 +56,11 @@ module Types
     end
 
     field :gear, Types::GearType, null: true
+    def gear
+      dataloader
+        .with(Sources::StudentGearByStudent)
+        .load(object)
+    end
 
     field :favorite_items, [Types::FavoriteItemType], null: false, extras: [:lookahead] do
       argument :favorited, Boolean, required: false

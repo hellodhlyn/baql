@@ -14,14 +14,27 @@ module Types
     field :end_at, GraphQL::Types::ISO8601DateTime, null: true
 
     def student_name
-      object.student&.name || object.student_name
+      if object.association(:student).loaded?
+        object.student&.name || object.student_name
+      elsif object.student_uid.present?
+        dataloader
+          .with(Sources::RecordByUid, Student)
+          .load(object.student_uid)
+          .then { |student| student&.name || object.student_name }
+      else
+        object.student_name
+      end
     end
 
     def student
       if object.association(:student).loaded?
         object.student
       else
-        object.student_uid.present? ? Student.find_by_uid(object.student_uid) : nil
+        return nil unless object.student_uid.present?
+
+        dataloader
+          .with(Sources::RecordByUid, Student)
+          .load(object.student_uid)
       end
     end
   end

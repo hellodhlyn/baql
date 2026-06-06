@@ -5,7 +5,7 @@ module Queries
     argument :uid, String, required: true
 
     def resolve(uid:)
-      JointFiringDrill.includes(:schedules).find_by(uid: uid)
+      JointFiringDrill.find_by(uid: uid)
     end
   end
 end

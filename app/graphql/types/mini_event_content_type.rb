@@ -10,5 +10,17 @@ module Types
     field :uid,       String,                              null: false
     field :name,      String,                              null: false
     field :schedules, [Types::MiniEventContentScheduleType], null: false
+
+    def name
+      dataloader
+        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .load("#{object.translation_key_prefix}::name")
+    end
+
+    def schedules
+      dataloader
+        .with(Sources::RecordsByForeignKey, MiniEventContentSchedule, :mini_event_content_uid, order: :occurrence)
+        .load(object.uid)
+    end
   end
 end

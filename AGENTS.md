@@ -300,6 +300,21 @@ RESOURCE_CLASS_MAP = {
 }
 ```
 
+### N+1 Prevention Rules
+
+- GraphQL field resolvers must not issue per-object `find_by`, `where`, or association queries on list paths. Prefer explicit `GraphQL::Dataloader::Source` classes keyed by the actual lookup boundary.
+- Treat GraphQL selection sets as dynamic. Do not rely on root resolver `includes` as the primary N+1 strategy; use it only for narrow, proven cases. Field-level dataloader sources are the default because they batch only when the field is selected.
+- Reuse generic batch sources for common patterns:
+  - record lookup by `uid`
+  - records grouped by foreign key
+  - translations by `{baql_id}::{field}` and language
+  - composite-key lookups such as `RaidSchedule` JP schedule mapping
+- `Translatable` model methods are acceptable in model code, sync code, and single-record contexts. GraphQL `name`/`description` fields on listable types should batch through a translation source instead of calling the model method per object.
+- Hash-backed GraphQL objects derived from `raw_data` must batch nested resource/student lookups. Do not call `RESOURCE_CLASS_MAP[...] .find_by(uid:)` or `Student.find_by...` inside each nested object resolver.
+- When a batched source duplicates existing model derivation logic, add an equivalence spec against the model method so future data-shape changes do not silently diverge.
+- Performance specs should assert that SQL count stays constant as fixture count grows. Avoid only asserting an absolute query count; constant-under-growth is the guard against N+1 regressions.
+- For review/debugging handoffs, report the exact GraphQL query shape, before/after SQL count, elapsed time, and which resolver/source changed.
+
 ---
 
 ## Data Synchronization

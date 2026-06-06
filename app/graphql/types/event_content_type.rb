@@ -6,19 +6,33 @@ module Types
     "furniture" => -> { ::Furniture },
   }.freeze
 
+  module ResourceLookup
+    private
+
+    def resource_for(resource_type, resource_uid)
+      klass_proc = RESOURCE_CLASS_MAP[resource_type]
+      return nil unless klass_proc && resource_uid
+
+      dataloader
+        .with(Sources::RecordByUid, klass_proc.call)
+        .load(resource_uid.to_s)
+    end
+  end
+
   class EventMinigamePaymentType < Types::Base::Object
+    include ResourceLookup
+
     field :resource, Types::ResourceInterface, null: true
     field :quantity, Int, null: false
 
     def resource
-      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
-      return nil unless klass_proc && object["resource_uid"]
-
-      klass_proc.call.find_by(uid: object["resource_uid"])
+      resource_for(object["resource_type"], object["resource_uid"])
     end
   end
 
   class EventMinigamePaymentRangeType < Types::Base::Object
+    include ResourceLookup
+
     field :resource, Types::ResourceInterface, null: true
     field :quantity_min, Int, null: false
     field :quantity_expected, Int, null: false
@@ -26,22 +40,18 @@ module Types
     field :quantity_variable, Boolean, null: false
 
     def resource
-      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
-      return nil unless klass_proc && object["resource_uid"]
-
-      klass_proc.call.find_by(uid: object["resource_uid"])
+      resource_for(object["resource_type"], object["resource_uid"])
     end
   end
 
   class EventMinigameRewardItemType < Types::Base::Object
+    include ResourceLookup
+
     field :resource, Types::ResourceInterface, null: true
     field :quantity, Float, null: false
 
     def resource
-      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
-      return nil unless klass_proc && object["resource_uid"]
-
-      klass_proc.call.find_by(uid: object["resource_uid"])
+      resource_for(object["resource_type"], object["resource_uid"])
     end
   end
 
@@ -76,20 +86,21 @@ module Types
   end
 
   class EventContentStageRewardType < Types::Base::Object
+    include ResourceLookup
+
     field :resource,    Types::ResourceInterface, null: true
     field :amount,      Int,    null: false
     field :probability, String, null: false
     field :tag,         String, null: false
 
     def resource
-      klass_proc = RESOURCE_CLASS_MAP[object["reward_type"]]
-      return nil unless klass_proc && object["reward_uid"]
-
-      klass_proc.call.find_by(uid: object["reward_uid"])
+      resource_for(object["reward_type"], object["reward_uid"])
     end
   end
 
   class EventContentStageType < Types::Base::Object
+    include ResourceLookup
+
     field :uid,                 String,  null: false
     field :stage_index,         Int,     null: false
     field :stage_type,          String,  null: false
@@ -99,14 +110,13 @@ module Types
     field :rewards, [Types::EventContentStageRewardType], null: false
 
     def enter_cost_resource
-      klass_proc = RESOURCE_CLASS_MAP[object["enter_cost_type"]]
-      return nil unless klass_proc && object["enter_cost_uid"]
-
-      klass_proc.call.find_by(uid: object["enter_cost_uid"])
+      resource_for(object["enter_cost_type"], object["enter_cost_uid"])
     end
   end
 
   class EventContentShopResourcePurchaseTierType < Types::Base::Object
+    include ResourceLookup
+
     field :tier_index,      Int,                      null: false
     field :start_quantity,  Int,                      null: false
     field :quantity,        Int,                      null: true
@@ -114,14 +124,13 @@ module Types
     field :payment_resource, Types::ResourceInterface, null: true
 
     def payment_resource
-      klass_proc = RESOURCE_CLASS_MAP[object["payment_resource_type"]]
-      return nil unless klass_proc && object["payment_resource_uid"]
-
-      klass_proc.call.find_by(uid: object["payment_resource_uid"])
+      resource_for(object["payment_resource_type"], object["payment_resource_uid"])
     end
   end
 
   class EventContentShopResourceType < Types::Base::Object
+    include ResourceLookup
+
     field :uid,                      String,                   null: false
     field :resource,                 Types::ResourceInterface, null: true
     field :resource_amount,          Int,                      null: false
@@ -132,34 +141,29 @@ module Types
     field :shop_amount,              Int,                      null: true
 
     def resource
-      klass_proc = RESOURCE_CLASS_MAP[object["resource_type"]]
-      return nil unless klass_proc && object["resource_uid"]
-
-      klass_proc.call.find_by(uid: object["resource_uid"])
+      resource_for(object["resource_type"], object["resource_uid"])
     end
 
     def payment_resource
-      klass_proc = RESOURCE_CLASS_MAP[object["payment_resource_type"]]
-      return nil unless klass_proc && object["payment_resource_uid"]
-
-      klass_proc.call.find_by(uid: object["payment_resource_uid"])
+      resource_for(object["payment_resource_type"], object["payment_resource_uid"])
     end
   end
 
   class EventContentBonusType < Types::Base::Object
+    include ResourceLookup
+
     field :student,    Types::StudentType, null: true
     field :resource,   Types::ResourceInterface, null: true
     field :percentage, String, null: false
 
     def student
-      Student.find_by(uid: object["student_uid"])
+      dataloader
+        .with(Sources::RecordByUid, Student)
+        .load(object["student_uid"])
     end
 
     def resource
-      klass_proc = RESOURCE_CLASS_MAP[object["reward_type"]]
-      return nil unless klass_proc && object["reward_uid"]
-
-      klass_proc.call.find_by(uid: object["reward_uid"])
+      resource_for(object["reward_type"], object["reward_uid"])
     end
   end
 
@@ -188,6 +192,18 @@ module Types
     def raw_data_rerun
       authorize_admin!
       object.raw_data_rerun
+    end
+
+    def name
+      dataloader
+        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .load("#{object.translation_key_prefix}::name")
+    end
+
+    def schedules
+      dataloader
+        .with(Sources::RecordsByForeignKey, EventContentSchedule, :event_content_uid)
+        .load(object.uid)
     end
 
     private

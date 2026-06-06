@@ -190,5 +190,53 @@ RSpec.describe Student, type: :model do
         )
       end
     end
+
+    it "matches the batched GraphQL gear source" do
+      students = [
+        FactoryBot.create(
+          :student,
+          uid: "gear-source-1",
+          raw_data: {
+            "Gear" => {
+              "Name" => "아루의 엄청 귀중한 지갑",
+              "TierUpMaterial" => [[5017, 150, 151]],
+              "TierUpMaterialAmount" => [[4, 80, 25]],
+            },
+          },
+        ),
+        FactoryBot.create(
+          :student,
+          uid: "gear-source-2",
+          raw_data: {
+            "Gear" => {
+              "Name" => "빈 재료 테스트",
+              "TierUpMaterial" => [[5017, 999999]],
+              "TierUpMaterialAmount" => [[7, 1]],
+            },
+          },
+        ),
+        FactoryBot.create(:student, uid: "gear-source-empty", raw_data: { "Gear" => {} }),
+      ]
+
+      source_gears = Sources::StudentGearByStudent.new.fetch(students)
+
+      expect(source_gears.map { |gear| serialize_gear(gear) })
+        .to eq(students.map { |student| serialize_gear(student.gear) })
+    end
+
+    def serialize_gear(gear)
+      return nil unless gear
+
+      {
+        name: gear.name,
+        growth_items: gear.growth_items.map do |growth_item|
+          {
+            gear_tier: growth_item.gear_tier,
+            item_uid: growth_item.item.uid,
+            amount: growth_item.amount,
+          }
+        end,
+      }
+    end
   end
 end

@@ -17,6 +17,21 @@ module GraphQLHelpers
     execute_graphql(query, **opts, context: { admin: true }.merge(opts[:context] || {}))
   end
 
+  def capture_sql
+    queries = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+      next if payload[:name] == "SCHEMA"
+      next if payload[:sql].match?(/\A(?:BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)/)
+
+      queries << payload
+    end
+
+    result = yield
+    [result, queries]
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
   def query_context
     @query_context ||= GraphQL::Query.new(BaqlSchema, "{ __typename }").context
   end

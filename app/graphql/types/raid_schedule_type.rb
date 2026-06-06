@@ -13,5 +13,19 @@ module Types
     field :defense_types, [Types::DefenseTypeAndDifficultyType], null: false,
       deprecation_reason: "Use `defense_type_sets` instead"
     field :jp_schedule, Types::RaidScheduleType, null: true
+
+    def raid_boss
+      dataloader
+        .with(Sources::RecordByUid, RaidBoss)
+        .load(object.raid_boss_uid)
+    end
+
+    def jp_schedule
+      return nil unless object.jp_season_index
+
+      dataloader
+        .with(Sources::RaidScheduleByJpKey)
+        .load([object.raid_type, object.jp_season_index])
+    end
   end
 end

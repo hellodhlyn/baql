@@ -6,7 +6,7 @@ module Queries
     argument :end_after, GraphQL::Types::ISO8601DateTime, required: false
 
     def resolve(region: nil, end_after: nil)
-      scope = MiniEventContent.includes(:schedules)
+      scope = MiniEventContent.all
 
       if region.present? || end_after.present?
         scope = scope.joins(:schedules)

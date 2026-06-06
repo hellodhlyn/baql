@@ -17,5 +17,11 @@ module Types
     field :defense_type, Types::Enums::DefenseType,        null: false
     field :confirmed,    Boolean,                          null: false
     field :schedules,    [Types::JointFiringDrillScheduleType], null: false
+
+    def schedules
+      dataloader
+        .with(Sources::RecordsByForeignKey, JointFiringDrillSchedule, :drill_uid, order: :region)
+        .load(object.uid)
+    end
   end
 end

@@ -8,7 +8,7 @@ module Queries
     argument :start_before, GraphQL::Types::ISO8601DateTime, required: false
 
     def resolve(end_after: nil, start_before: nil)
-      drills = JointFiringDrill.includes(:schedules).order(season: :asc)
+      drills = JointFiringDrill.order(season: :asc)
 
       if end_after.present? || start_before.present?
         drills = drills.joins(:schedules)

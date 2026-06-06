@@ -12,6 +12,18 @@ module Types
     field :episode_start, Int,    null: true
     field :episode_end,   Int,    null: true
     field :schedules,     [Types::MainStoryPartScheduleType], null: false
+
+    def name
+      dataloader
+        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .load("#{object.translation_key_prefix}::name")
+    end
+
+    def schedules
+      dataloader
+        .with(Sources::RecordsByForeignKey, MainStoryPartSchedule, :part_uid, order: :region)
+        .load(object.uid)
+    end
   end
 
   class MainStoryChapterType < Types::Base::Object
@@ -19,6 +31,18 @@ module Types
     field :name,           String, null: true
     field :chapter_number, Int,    null: false
     field :parts,          [Types::MainStoryPartType], null: false
+
+    def name
+      dataloader
+        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .load("#{object.translation_key_prefix}::name")
+    end
+
+    def parts
+      dataloader
+        .with(Sources::RecordsByForeignKey, MainStoryPart, :chapter_uid, order: :sort_order)
+        .load(object.uid)
+    end
   end
 
   class MainStoryVolumeType < Types::Base::Object
@@ -28,5 +52,17 @@ module Types
     field :name,       String, null: true
     field :sort_order, Int,    null: false
     field :chapters,   [Types::MainStoryChapterType], null: false
+
+    def name
+      dataloader
+        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .load("#{object.translation_key_prefix}::name")
+    end
+
+    def chapters
+      dataloader
+        .with(Sources::RecordsByForeignKey, MainStoryChapter, :volume_uid, order: :chapter_number)
+        .load(object.uid)
+    end
   end
 end
