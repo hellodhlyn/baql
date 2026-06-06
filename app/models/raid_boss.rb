@@ -38,6 +38,13 @@ class RaidBoss < ApplicationRecord
     Array(raw_armor_types).filter_map { |armor_type| ARMOR_TYPE_MAP[armor_type] }.uniq
   end
 
+  def self.raw_armor_types_for(boss)
+    armor_types = Array(boss["ArmorTypes"]).flatten.compact
+    return armor_types if armor_types.any?
+
+    [boss["ArmorType"], boss["SubArmorType"]].flatten.compact
+  end
+
   def self.build_defense_type_set(raw_armor_types, difficulty)
     defense_types = normalize_armor_types(raw_armor_types)
     return nil if defense_types.empty? || difficulty.blank?
@@ -79,7 +86,7 @@ class RaidBoss < ApplicationRecord
       uid          = boss["PathName"]
       attack_type  = ATTACK_TYPE_MAP[boss["BulletTypeInsane"]]
       raid_id_to_uid[boss["Id"]]         = uid
-      raid_id_to_armor_types[boss["Id"]] = boss["ArmorTypes"] || boss["ArmorType"]
+      raid_id_to_armor_types[boss["Id"]] = raw_armor_types_for(boss)
       raid_id_to_attack_type[boss["Id"]] = attack_type
       find_or_initialize_by(uid: uid)
         .update!(baql_id: "#{BAQL_ID_PREFIX}#{uid}", raid_type: "raid", event_content_uid: nil)

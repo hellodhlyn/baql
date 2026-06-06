@@ -8,9 +8,10 @@ RSpec.describe RaidBoss, type: :model do
           {
             "Id" => 99,
             "PathName" => "drumbarka",
-            "Name" => "드럼바르카",
-            "ArmorType" => ["LightArmor", "Unarmed"],
-            "BulletTypeInsane" => "Mystic",
+            "Name" => "드럼통 게",
+            "ArmorType" => "Unarmed",
+            "SubArmorType" => "LightArmor",
+            "BulletTypeInsane" => "Pierce",
           },
         ],
         "RaidSeasons" => [
@@ -43,7 +44,7 @@ RSpec.describe RaidBoss, type: :model do
       schedule = RaidSchedule.find_by!(region: "jp", raid_type: "total_assault", season_index: 90)
       expect(schedule.raid_boss_uid).to eq("drumbarka")
       expect(schedule.read_attribute(:defense_types)).to eq([
-        { "defense_types" => ["light", "special"], "difficulty" => "lunatic" },
+        { "defense_types" => ["special", "light"], "difficulty" => "lunatic" },
       ])
       expect(schedule.defense_types).to contain_exactly(
         RaidSchedule::DefenseType.new(defense_type: "light", difficulty: "lunatic"),
