@@ -33,22 +33,27 @@ RSpec.describe Mutations::RaidSchedules::CreateRaidSchedule, type: :graphql do
     expect(RaidSchedule.find_by(uid: "jp_total_assault_100")).to be_present
   end
 
-  it "creates with defense_types" do
+  it "creates with grouped defense_type_sets" do
     result = execute_graphql_as_admin(mutation, variables: {
       input: {
-        uid: "jp_elimination_50",
+        uid: "jp_total_assault_90",
         raidBossUid: "binah",
         region: "jp",
-        raidType: "elimination",
-        seasonIndex: 50,
+        raidType: "total_assault",
+        seasonIndex: 90,
         terrain: "outdoor",
-        defenseTypes: [{ defenseType: "special", difficulty: "lunatic" }],
+        defenseTypeSets: [
+          { defenseTypes: ["light", "special"], difficulty: "lunatic" },
+        ],
       },
     })
+
     data = result.dig("data", "createRaidSchedule")
     expect(data["errors"]).to be_empty
-    schedule = RaidSchedule.find_by(uid: "jp_elimination_50")
-    expect(schedule.defense_types.first.defense_type).to eq("special")
+    schedule = RaidSchedule.find_by(uid: "jp_total_assault_90")
+    expect(schedule.read_attribute(:defense_types)).to eq([
+      { "defense_types" => ["light", "special"], "difficulty" => "lunatic" },
+    ])
   end
 
   it "returns an error when uid is duplicated" do

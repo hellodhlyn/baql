@@ -34,6 +34,31 @@ class RaidBoss < ApplicationRecord
     [ 1, "extreme"],
   ].freeze
 
+  def self.normalize_armor_types(raw_armor_types)
+    Array(raw_armor_types).filter_map { |armor_type| ARMOR_TYPE_MAP[armor_type] }.uniq
+  end
+
+  def self.raw_armor_types_for(boss)
+    armor_types = Array(boss["ArmorTypes"]).flatten.compact
+    return armor_types if armor_types.any?
+
+    [boss["ArmorType"], boss["SubArmorType"]].flatten.compact
+  end
+
+  def self.build_defense_type_set(raw_armor_types, difficulty)
+    defense_types = normalize_armor_types(raw_armor_types)
+    return nil if defense_types.empty? || difficulty.blank?
+
+    { "defense_types" => defense_types, "difficulty" => difficulty }
+  end
+
+  def self.build_legacy_defense_type_set(raw_armor_type, difficulty)
+    defense_type = ARMOR_TYPE_MAP[raw_armor_type]
+    return nil unless defense_type && difficulty
+
+    { "defense_type" => defense_type, "difficulty" => difficulty }
+  end
+
   belongs_to :event_content, foreign_key: :event_content_uid, primary_key: :uid, optional: true
   has_many :schedules, class_name: "RaidSchedule", foreign_key: :raid_boss_uid, primary_key: :uid
 
@@ -55,15 +80,14 @@ class RaidBoss < ApplicationRecord
     allied_boss_terrain = {}
 
     # 1. Raid[] → raid_type: "raid"
-    raid_id_to_defense_type = {}
+    raid_id_to_armor_types = {}
     raid_id_to_attack_type  = {}
     (data["Raid"] || []).each do |boss|
       uid          = boss["PathName"]
-      defense_type = ARMOR_TYPE_MAP[boss["ArmorType"]]
       attack_type  = ATTACK_TYPE_MAP[boss["BulletTypeInsane"]]
-      raid_id_to_uid[boss["Id"]]          = uid
-      raid_id_to_defense_type[boss["Id"]] = defense_type
-      raid_id_to_attack_type[boss["Id"]]  = attack_type
+      raid_id_to_uid[boss["Id"]]         = uid
+      raid_id_to_armor_types[boss["Id"]] = raw_armor_types_for(boss)
+      raid_id_to_attack_type[boss["Id"]] = attack_type
       find_or_initialize_by(uid: uid)
         .update!(baql_id: "#{BAQL_ID_PREFIX}#{uid}", raid_type: "raid", event_content_uid: nil)
     end
@@ -124,19 +148,15 @@ class RaidBoss < ApplicationRecord
           defense_types_data = if entry[:raid_type] == "elimination"
             open_difficulty = season["OpenDifficulty"] || {}
             open_difficulty.filter_map do |armor_type, diff_level|
-              defense_type = ARMOR_TYPE_MAP[armor_type]
-              difficulty   = DIFFICULTY_MAP[diff_level]
-              next unless defense_type && difficulty
-
-              { "defense_type" => defense_type, "difficulty" => difficulty }
+              difficulty = DIFFICULTY_MAP[diff_level]
+              build_legacy_defense_type_set(armor_type, difficulty)
             end
           else
-            # total_assault: 보스의 단일 defense_type + 시즌별 최고 난이도
-            boss_defense_type = raid_id_to_defense_type[raid_id]
             difficulty = TOTAL_ASSAULT_MAX_DIFFICULTY_THRESHOLDS
               .find { |threshold, _| season_index >= threshold }
               &.last
-            boss_defense_type && difficulty ? [{ "defense_type" => boss_defense_type, "difficulty" => difficulty }] : []
+            defense_type_set = build_defense_type_set(raid_id_to_armor_types[raid_id], difficulty)
+            defense_type_set ? [defense_type_set] : []
           end
 
           schedule_uid     = "#{region}_#{entry[:raid_type]}_#{season_index}"
@@ -232,13 +252,7 @@ class RaidBoss < ApplicationRecord
         jp = jp_schedules_by_season[jp_season_index]
         next unless jp
 
-        boss_defense_type = jp.defense_types.first&.defense_type
-        difficulty = TOTAL_ASSAULT_MAX_DIFFICULTY_THRESHOLDS
-          .find { |threshold, _| jp_season_index >= threshold }
-          &.last
-        next unless boss_defense_type && difficulty
-
-        gl.update_columns(defense_types: [{ "defense_type" => boss_defense_type, "difficulty" => difficulty }])
+        gl.update_columns(defense_types: jp.read_attribute(:defense_types))
       end
 
     # 7. Translation sync
