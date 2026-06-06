@@ -21,6 +21,7 @@ gem "bootsnap", require: false
 
 # External Services
 gem "google-apis-youtube_v3"
+gem "multi_json"
 
 # Monitoring
 gem "newrelic_rpm"
