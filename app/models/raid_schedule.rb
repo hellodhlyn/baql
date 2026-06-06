@@ -83,20 +83,6 @@ class RaidSchedule < ApplicationRecord
     update!(start_at: ecs.start_at, end_at: ecs.end_at)
   end
 
-  def duplicate!(new_region:, new_season_index:)
-    new_uid = "#{new_region}_#{self.raid_type}_#{new_season_index}"
-    RaidSchedule.create!(self.attributes
-      .except("id", "uid", "baql_id", "region", "season_index", "jp_season_index", "start_at", "end_at", "created_at", "updated_at")
-      .merge(
-        uid:             new_uid,
-        baql_id:         "#{BAQL_ID_PREFIX}#{new_uid}",
-        region:          "gl",
-        season_index:    new_season_index,
-        jp_season_index: self.region == "jp" ? self.season_index : nil,
-      )
-    )
-  end
-
   private
 
   def raw_defense_type_entries

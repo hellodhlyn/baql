@@ -10,7 +10,8 @@ module Types
     field :end_at, GraphQL::Types::ISO8601DateTime, null: true
     field :attack_type, Types::Enums::AttackType, null: true
     field :defense_type_sets, [Types::DefenseTypeSetType], null: false
-    field :defense_types, [Types::DefenseTypeAndDifficultyType], null: false
+    field :defense_types, [Types::DefenseTypeAndDifficultyType], null: false,
+      deprecation_reason: "Use `defense_type_sets` instead"
     field :jp_schedule, Types::RaidScheduleType, null: true
   end
 end
