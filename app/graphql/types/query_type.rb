@@ -25,5 +25,7 @@ module Types
     field :joint_firing_drills,  resolver: Queries::JointFiringDrillsQuery
     field :mini_event_content,   resolver: Queries::MiniEventContentQuery
     field :mini_event_contents,  resolver: Queries::MiniEventContentsQuery
+    field :mini_story,           resolver: Queries::MiniStoryQuery
+    field :mini_stories,         resolver: Queries::MiniStoriesQuery
   end
 end

@@ -35,5 +35,9 @@ module Types
 
     # JointFiringDrillSchedule
     field :upsert_joint_firing_drill_schedule, mutation: Mutations::JointFiringDrillSchedules::UpsertJointFiringDrillSchedule
+
+    # MiniStory
+    field :create_mini_story, mutation: Mutations::MiniStories::CreateMiniStory
+    field :update_mini_story, mutation: Mutations::MiniStories::UpdateMiniStory
   end
 end
