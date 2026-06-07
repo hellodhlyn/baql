@@ -4,6 +4,9 @@ module Types
   class QueryType < Types::Base::Object
     field :event_content,  resolver: Queries::EventContentQuery
     field :event_contents, resolver: Queries::EventContentsQuery
+    field :stage,          resolver: Queries::StageQuery
+    field :stages,         resolver: Queries::StagesQuery
+    field :gacha_group,    resolver: Queries::GachaGroupQuery
     field :raid_schedule,  resolver: Queries::RaidScheduleQuery
     field :raid_schedule_by_season_index, resolver: Queries::RaidScheduleBySeasonIndexQuery
     field :raid_schedules, resolver: Queries::RaidSchedulesQuery

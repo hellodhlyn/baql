@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_15_001000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_07_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -156,6 +156,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_15_001000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_furnitures_on_uid", unique: true
+  end
+
+  create_table "gacha_groups", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.jsonb "raw_data", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_gacha_groups_on_uid", unique: true
   end
 
   create_table "items", force: :cascade do |t|
@@ -397,6 +406,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_15_001000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["type", "uid"], name: "index_resources_on_type_and_uid", unique: true
+  end
+
+  create_table "stages", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.string "category", null: false
+    t.string "stage_type"
+    t.integer "difficulty"
+    t.integer "area"
+    t.string "stage_number"
+    t.string "terrain"
+    t.integer "level"
+    t.jsonb "raw_data", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category"], name: "index_stages_on_category"
+    t.index ["uid"], name: "index_stages_on_uid", unique: true
   end
 
   create_table "student_favorite_items", force: :cascade do |t|

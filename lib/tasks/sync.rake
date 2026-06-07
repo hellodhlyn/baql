@@ -7,6 +7,7 @@ namespace :sync do
     Rake::Task["sync:equipments"].invoke
     Rake::Task["sync:currencies"].invoke
     Rake::Task["sync:raid_bosses"].invoke
+    Rake::Task["sync:stages"].invoke
   end
 
   task students: [:environment] do
@@ -43,5 +44,11 @@ namespace :sync do
   task raid_bosses: [:environment] do
     puts "Syncing raid bosses data..."
     RaidBoss.sync!
+  end
+
+  task stages: [:environment] do
+    puts "Syncing stages data..."
+    GachaGroup.sync!
+    Stage.sync!
   end
 end
