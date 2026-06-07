@@ -17,6 +17,14 @@ class GachaGroup < ApplicationRecord
     nil
   end
 
+  def recursive
+    raw_data["Recursive"] == true
+  end
+
+  def reward_all
+    raw_data["RewardAll"] == true
+  end
+
   def items(region: "jp")
     raw_items_for(region).map do |item|
       {

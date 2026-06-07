@@ -16,6 +16,8 @@ module Types
 
   class GachaGroupType < Types::Base::Object
     field :uid, String, null: false
+    field :recursive, Boolean, null: false
+    field :reward_all, Boolean, null: false
 
     field :items, [Types::GachaGroupItemType], null: false do
       argument :region, Types::EventContentType::RegionEnum, required: false, default_value: "jp"

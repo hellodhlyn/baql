@@ -112,6 +112,8 @@ RSpec.describe Queries::StagesQuery, type: :graphql do
       query($uid: String!) {
         gachaGroup(uid: $uid) {
           uid
+          recursive
+          rewardAll
           items(region: cn) {
             chance
             amountMin
@@ -329,6 +331,8 @@ RSpec.describe Queries::StagesQuery, type: :graphql do
     expect(result["errors"]).to be_nil
     expect(result.dig("data", "gachaGroup")).to include(
       "uid" => "900",
+      "recursive" => false,
+      "rewardAll" => false,
       "items" => contain_exactly(
         a_hash_including(
           "chance" => 0.8,
@@ -337,6 +341,28 @@ RSpec.describe Queries::StagesQuery, type: :graphql do
           "resource" => a_hash_including("type" => "item", "uid" => "301", "name" => "CN Item"),
         )
       ),
+    )
+  end
+
+  it "exposes recursive and reward_all flags from raw data" do
+    FactoryBot.create(
+      :gacha_group,
+      uid: "rec",
+      raw_data: {
+        "Recursive" => true,
+        "Items" => [
+          { "Type" => "Item", "Id" => "300", "Chance" => 0, "AmountMin" => 1, "AmountMax" => 1 },
+        ],
+      },
+    )
+
+    result = execute_graphql(gacha_group_query, variables: { uid: "rec" })
+
+    expect(result["errors"]).to be_nil
+    expect(result.dig("data", "gachaGroup")).to include(
+      "uid" => "rec",
+      "recursive" => true,
+      "rewardAll" => false,
     )
   end
 
