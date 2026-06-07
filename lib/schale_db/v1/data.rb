@@ -32,6 +32,14 @@ module SchaleDB::V1
       get("data/#{lang}/raids.min.json")
     end
 
+    def self.stages(lang = "kr")
+      get("data/#{lang}/stages.min.json")
+    end
+
+    def self.groups
+      get("data/groups.min.json")
+    end
+
     def self.localization(lang = "kr")
       get("data/#{lang}/localization.min.json")
     end
