@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_07_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_07_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -267,6 +267,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_07_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_mini_event_contents_on_uid", unique: true
+  end
+
+  create_table "mini_stories", force: :cascade do |t|
+    t.string "uid", null: false
+    t.string "baql_id", null: false
+    t.integer "episode_count", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_mini_stories_on_uid", unique: true
+  end
+
+  create_table "mini_story_schedules", force: :cascade do |t|
+    t.string "mini_story_uid", null: false
+    t.string "region", null: false
+    t.datetime "released_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["mini_story_uid", "region"], name: "index_mini_story_schedules_on_mini_story_uid_and_region", unique: true
+    t.index ["region", "released_at"], name: "index_mini_story_schedules_on_region_and_released_at"
   end
 
   create_table "pickups", force: :cascade do |t|
