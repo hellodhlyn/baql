@@ -49,6 +49,35 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
     end
   end
 
+  describe "student name fields" do
+    it "returns alternative names, family name, and personal name" do
+      student = FactoryBot.create(
+        :student,
+        uid: "student-name-fields",
+        alt_names: ["쿠로코", "시로코 테러"],
+        family_name: "스나오오카미",
+        personal_name: "시로코",
+      )
+
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
+        query($uid: String!) {
+          student(uid: $uid) {
+            altNames
+            familyName
+            personalName
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "student")).to eq(
+        "altNames" => ["쿠로코", "시로코 테러"],
+        "familyName" => "스나오오카미",
+        "personalName" => "시로코",
+      )
+    end
+  end
+
   describe "student skills field" do
     let!(:student) { FactoryBot.create(:student, uid: "13005", raw_data: student_skills) }
 

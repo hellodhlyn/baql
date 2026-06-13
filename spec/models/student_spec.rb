@@ -40,9 +40,22 @@ RSpec.describe Student, type: :model do
           position:     "middle",
           tactic_role:  "support",
           birthday:     Date.new(0, 3, 17),
+          alt_names:     [],
+          family_name:   "오니카타",
+          personal_name: "카요코",
           equipments:   ["shoes", "hairpin", "necklace"],
           order:        19,
           schale_db_id: "kayoko",
+        )
+      end
+
+      it "stores search tags as alternative names" do
+        subject
+
+        expect(Student.find_by(uid: "10091")).to have_attributes(
+          alt_names:     ["밴즈사"],
+          family_name:   "쿄야마",
+          personal_name: "카즈사",
         )
       end
 

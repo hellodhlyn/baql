@@ -25,6 +25,9 @@ module Types
     field :create_recruitment, mutation: Mutations::Recruitments::CreateRecruitment
     field :update_recruitment, mutation: Mutations::Recruitments::UpdateRecruitment
 
+    # Student
+    field :update_student, mutation: Mutations::Students::UpdateStudent
+
     # Campaign
     field :create_campaign, mutation: Mutations::Campaigns::CreateCampaign
     field :update_campaign, mutation: Mutations::Campaigns::UpdateCampaign

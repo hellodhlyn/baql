@@ -8,6 +8,8 @@ module Types
     field :uid, String, null: false
     field :name, String, null: false
     field :alt_names, [String], null: false
+    field :family_name, String, null: true
+    field :personal_name, String, null: true
     field :school, String, null: false
     field :initial_tier, Int, null: false
     field :attack_type, Types::Enums::AttackType, null: false
