@@ -92,8 +92,14 @@ class Student < ApplicationRecord
   end
 
   def sync_images!
-    self.class.sync_image!("assets/images/students/standing/#{uid}", SchaleDB::V1::Images.student_standing(uid))
-    self.class.sync_image!("assets/images/students/collection/#{uid}", SchaleDB::V1::Images.student_collection(uid))
+    self.class.sync_image!(
+      self.class.image_storage_key("students", "standing", "#{uid}.webp"),
+      SchaleDB::V1::Images.student_standing(uid),
+    )
+    self.class.sync_image!(
+      self.class.image_storage_key("students", "collection", "#{uid}.webp"),
+      SchaleDB::V1::Images.student_collection(uid),
+    )
     nil
   end
 

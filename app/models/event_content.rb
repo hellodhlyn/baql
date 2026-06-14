@@ -184,7 +184,7 @@ class EventContent < ApplicationRecord
       image_body = SchaleDB::V1::Images.event_logo(event_content.uid, locale_suffix)
       next if image_body.blank?
 
-      key = "assets/images/events/logos/#{locale_suffix.downcase}/#{event_content.uid}"
+      key = image_storage_key("events", "logo", "#{event_content.uid}_#{locale_suffix.downcase}.webp")
       sync_image!(key, image_body)
     end
   end

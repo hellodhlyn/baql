@@ -29,7 +29,10 @@ class Equipment < ApplicationRecord
 
       if equipment.saved_changes?
         Rails.logger.info("Equipment #{raw_equipment["Name"]}(#{equipment.uid}) has been updated")
-        sync_image!("assets/images/equipments/#{equipment.uid}", SchaleDB::V1::Images.equipment_icon(raw_equipment["Icon"]))
+        sync_image!(
+          image_storage_key("resources", "equipments", "#{equipment.uid}.webp"),
+          SchaleDB::V1::Images.equipment_icon(raw_equipment["Icon"]),
+        )
       end
     end
 

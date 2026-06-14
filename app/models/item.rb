@@ -28,7 +28,10 @@ class Item < ApplicationRecord
 
       if item.saved_changes?
         Rails.logger.info("Item #{raw_item["Name"]}(#{item.uid}) has been updated")
-        sync_image!("assets/images/items/#{item.uid}", SchaleDB::V1::Images.item_icon(raw_item["Icon"]))
+        sync_image!(
+          image_storage_key("resources", "items", "#{item.uid}.webp"),
+          SchaleDB::V1::Images.item_icon(raw_item["Icon"]),
+        )
       end
     end
 
@@ -64,7 +67,10 @@ class Item < ApplicationRecord
       end
     end
 
-    self.class.copy_image!("assets/images/items/#{uid}", "assets/images/items/#{new_uid}")
+    self.class.copy_image!(
+      self.class.image_storage_key("resources", "items", "#{uid}.webp"),
+      self.class.image_storage_key("resources", "items", "#{new_uid}.webp"),
+    )
 
     new_item
   end

@@ -257,7 +257,7 @@ Multi-language support. Declaring `translatable :name, :description` generates:
 S3 image synchronization.
 - `sync_image!(key, image_body)` — PUT to S3
 - `copy_image!(source_key, dest_key)` — COPY within S3
-- Requires env var: `STATIC_BUCKET_NAME`
+- Requires env var: `ASSET_BUCKET_NAME`
 
 ### `Battleable`
 Provides `ATTACK_TYPES` and `DEFENSE_TYPES` constants (used by `Raid`).

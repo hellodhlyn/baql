@@ -38,6 +38,7 @@ module SchaleDB::V1
       uri = URI(address)
       response = Net::HTTP.get_response(uri)
       return nil unless response.is_a?(Net::HTTPSuccess)
+      return nil unless response.content_type == "image/webp"
 
       response.body
     end

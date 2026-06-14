@@ -16,7 +16,7 @@ Used by [mollulog.net](https://mollulog.net).
 
 Set environment variables.
 
-- `STATIC_BUCKET_NAME`
+- `ASSET_BUCKET_NAME`
 - (Environment variables for AWS S3)
 
 ```bash

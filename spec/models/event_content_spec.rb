@@ -1,6 +1,34 @@
 require "rails_helper"
 
 RSpec.describe EventContent, type: :model do
+  describe ".sync_event_logos!" do
+    it "syncs event logos to the normalized image storage path" do
+      event_content = FactoryBot.build(:event_content, uid: "123")
+
+      allow(SchaleDB::V1::Images).to receive(:event_logo).with("123", "Jp").and_return("jp-image")
+      allow(SchaleDB::V1::Images).to receive(:event_logo).with("123", "Kr").and_return("kr-image")
+      allow(EventContent).to receive(:sync_image!)
+
+      EventContent.sync_event_logos!(event_content)
+
+      expect(EventContent).to have_received(:sync_image!).with("images/events/logo/123_jp.webp", "jp-image")
+      expect(EventContent).to have_received(:sync_image!).with("images/events/logo/123_kr.webp", "kr-image")
+    end
+
+    it "skips locales whose event logo image does not exist" do
+      event_content = FactoryBot.build(:event_content, uid: "857")
+
+      allow(SchaleDB::V1::Images).to receive(:event_logo).with("857", "Jp").and_return("jp-image")
+      allow(SchaleDB::V1::Images).to receive(:event_logo).with("857", "Kr").and_return(nil)
+      allow(EventContent).to receive(:sync_image!)
+
+      EventContent.sync_event_logos!(event_content)
+
+      expect(EventContent).to have_received(:sync_image!).with("images/events/logo/857_jp.webp", "jp-image")
+      expect(EventContent).not_to have_received(:sync_image!).with("images/events/logo/857_kr.webp", anything)
+    end
+  end
+
   describe "rerun item duplication" do
     let(:first_raw) do
       {
@@ -41,9 +69,9 @@ RSpec.describe EventContent, type: :model do
       expect(Item.find_by!(uid: "85381").name).to eq("엑스포 기념품")
       expect(Item.find_by!(uid: "85382").name).to eq("누군가의 분실물")
 
-      expect(Item).to have_received(:copy_image!).with("assets/images/items/80540", "assets/images/items/85380")
-      expect(Item).to have_received(:copy_image!).with("assets/images/items/80541", "assets/images/items/85381")
-      expect(Item).to have_received(:copy_image!).with("assets/images/items/80542", "assets/images/items/85382")
+      expect(Item).to have_received(:copy_image!).with("images/resources/items/80540.webp", "images/resources/items/85380.webp")
+      expect(Item).to have_received(:copy_image!).with("images/resources/items/80541.webp", "images/resources/items/85381.webp")
+      expect(Item).to have_received(:copy_image!).with("images/resources/items/80542.webp", "images/resources/items/85382.webp")
     end
 
     it "does not duplicate again once raw_data_rerun was already present" do

@@ -26,7 +26,12 @@ class Currency < ApplicationRecord
 
       if currency.saved_changes?
         Rails.logger.info("Currency #{raw_currency["Name"]}(#{currency.uid}) has been updated")
-        sync_image!("assets/images/currencies/#{currency.uid}", SchaleDB::V1::Images.currency_icon(raw_currency["Icon"])) if raw_currency["Icon"].present?
+        if raw_currency["Icon"].present?
+          sync_image!(
+            image_storage_key("resources", "currencies", "#{currency.uid}.webp"),
+            SchaleDB::V1::Images.currency_icon(raw_currency["Icon"]),
+          )
+        end
       end
     end
 

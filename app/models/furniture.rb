@@ -28,7 +28,10 @@ class Furniture < ApplicationRecord
 
       if furniture.saved_changes?
         Rails.logger.info("Furniture #{raw_furniture["Name"]}(#{furniture.uid}) has been updated")
-        sync_image!("assets/images/furnitures/#{furniture.uid}", SchaleDB::V1::Images.furniture_icon(raw_furniture["Icon"]))
+        sync_image!(
+          image_storage_key("resources", "furnitures", "#{furniture.uid}.webp"),
+          SchaleDB::V1::Images.furniture_icon(raw_furniture["Icon"]),
+        )
       end
     end
 

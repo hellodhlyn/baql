@@ -1,6 +1,21 @@
 require "rails_helper"
 
 RSpec.describe Student, type: :model do
+  describe "#sync_images!" do
+    it "syncs standing and collection images to the normalized image storage paths" do
+      student = FactoryBot.build(:student, uid: "13005")
+
+      allow(SchaleDB::V1::Images).to receive(:student_standing).with("13005").and_return("standing-image")
+      allow(SchaleDB::V1::Images).to receive(:student_collection).with("13005").and_return("collection-image")
+      allow(Student).to receive(:sync_image!)
+
+      student.sync_images!
+
+      expect(Student).to have_received(:sync_image!).with("images/students/standing/13005.webp", "standing-image")
+      expect(Student).to have_received(:sync_image!).with("images/students/collection/13005.webp", "collection-image")
+    end
+  end
+
   describe ".all_without_multiclass" do
     before do
       FactoryBot.create(:student, uid: "10098", multiclass_uid: "10098")
