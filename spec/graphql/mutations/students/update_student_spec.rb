@@ -10,7 +10,7 @@ RSpec.describe Mutations::Students::UpdateStudent, type: :graphql do
           student {
             uid
             koreanName: name
-            japaneseName: name(language: ja)
+            japaneseName: name(lang: ja)
             altNames
             familyName
             personalName

@@ -65,8 +65,8 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
         query($uid: String!) {
           student(uid: $uid) {
             koreanName: name
-            japaneseName: name(language: ja)
-            englishName: name(language: en)
+            japaneseName: name(lang: ja)
+            englishName: name(lang: en)
             altNames
             familyName
             personalName

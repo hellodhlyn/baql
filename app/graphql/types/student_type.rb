@@ -7,7 +7,7 @@ module Types
 
     field :uid, String, null: false
     field :name, String, null: false do
-      argument :language, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
+      argument :lang, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
     end
     field :alt_names, [String], null: false
     field :family_name, String, null: true
@@ -27,9 +27,9 @@ module Types
     field :order, Int, null: false
     field :schale_db_id, String, null: true
 
-    def name(language:)
+    def name(lang:)
       dataloader
-        .with(Sources::StudentNameByStudent, language)
+        .with(Sources::StudentNameByStudent, lang)
         .load(object)
     end
 
