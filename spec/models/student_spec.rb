@@ -34,6 +34,16 @@ RSpec.describe Student, type: :model do
     before do
       stub_request(:get, "https://schaledb.com/data/kr/students.min.json")
         .to_return(body: File.read("spec/_fixtures/students.min.json"))
+      stub_request(:get, "https://schaledb.com/data/jp/students.min.json")
+        .to_return(body: {
+          "13005" => { "Name" => "カヨコ" },
+          "10091" => { "Name" => "カズサ（バンド）" },
+        }.to_json)
+      stub_request(:get, "https://schaledb.com/data/en/students.min.json")
+        .to_return(body: {
+          "13005" => { "Name" => "Kayoko" },
+          "10091" => { "Name" => "Kazusa (Band)" },
+        }.to_json)
 
       allow(SchaleDB::V1::Images).to receive(:student_standing).and_return(nil)
       allow(SchaleDB::V1::Images).to receive(:student_collection).and_return(nil)
@@ -72,6 +82,17 @@ RSpec.describe Student, type: :model do
           family_name:   "쿄야마",
           personal_name: "카즈사",
         )
+      end
+
+      it "stores localized names as translations while keeping Korean name as fallback" do
+        subject
+
+        student = Student.find_by(uid: "13005")
+
+        expect(student.read_attribute(:name)).to eq("카요코")
+        expect(student.name("ko")).to eq("카요코")
+        expect(student.name("ja")).to eq("カヨコ")
+        expect(student.name("en")).to eq("Kayoko")
       end
 
       it "stores the source payload in raw_data" do

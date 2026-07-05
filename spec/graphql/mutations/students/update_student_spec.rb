@@ -9,6 +9,8 @@ RSpec.describe Mutations::Students::UpdateStudent, type: :graphql do
         updateStudent(input: $input) {
           student {
             uid
+            koreanName: name
+            japaneseName: name(language: ja)
             altNames
             familyName
             personalName
@@ -23,6 +25,7 @@ RSpec.describe Mutations::Students::UpdateStudent, type: :graphql do
     FactoryBot.create(
       :student,
       uid: "10142",
+      name: "나구사",
       alt_names: [],
       family_name: nil,
       personal_name: nil,
@@ -33,6 +36,10 @@ RSpec.describe Mutations::Students::UpdateStudent, type: :graphql do
     result = execute_graphql_as_admin(mutation, variables: {
       input: {
         uid: student.uid,
+        name: [
+          { language: "ko", value: "나구사" },
+          { language: "ja", value: "五稜ナグサ" },
+        ],
         altNames: ["수구사", "수나구사"],
         familyName: "고료",
         personalName: "나구사",
@@ -43,15 +50,19 @@ RSpec.describe Mutations::Students::UpdateStudent, type: :graphql do
     expect(data["errors"]).to be_empty
     expect(data["student"]).to eq(
       "uid" => student.uid,
+      "koreanName" => "나구사",
+      "japaneseName" => "五稜ナグサ",
       "altNames" => ["수구사", "수나구사"],
       "familyName" => "고료",
       "personalName" => "나구사",
     )
     expect(student.reload).to have_attributes(
+      name:          "나구사",
       alt_names:     ["수구사", "수나구사"],
       family_name:   "고료",
       personal_name: "나구사",
     )
+    expect(student.name("ja")).to eq("五稜ナグサ")
   end
 
   it "returns an error when uid does not exist" do

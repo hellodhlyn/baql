@@ -50,18 +50,23 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
   end
 
   describe "student name fields" do
-    it "returns alternative names, family name, and personal name" do
+    it "returns localized name with Korean fallback, alternative names, family name, and personal name" do
       student = FactoryBot.create(
         :student,
         uid: "student-name-fields",
+        name: "시로코",
         alt_names: ["쿠로코", "시로코 테러"],
         family_name: "스나오오카미",
         personal_name: "시로코",
       )
+      student.set_name("砂狼シロコ＊テラー", "ja")
 
       result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
         query($uid: String!) {
           student(uid: $uid) {
+            koreanName: name
+            japaneseName: name(language: ja)
+            englishName: name(language: en)
             altNames
             familyName
             personalName
@@ -71,6 +76,9 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
 
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "student")).to eq(
+        "koreanName" => "시로코",
+        "japaneseName" => "砂狼シロコ＊テラー",
+        "englishName" => "시로코",
         "altNames" => ["쿠로코", "시로코 테러"],
         "familyName" => "스나오오카미",
         "personalName" => "시로코",

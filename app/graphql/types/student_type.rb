@@ -6,7 +6,9 @@ module Types
     end
 
     field :uid, String, null: false
-    field :name, String, null: false
+    field :name, String, null: false do
+      argument :language, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
+    end
     field :alt_names, [String], null: false
     field :family_name, String, null: true
     field :personal_name, String, null: true
@@ -24,6 +26,12 @@ module Types
     field :released, Boolean, null: false
     field :order, Int, null: false
     field :schale_db_id, String, null: true
+
+    def name(language:)
+      dataloader
+        .with(Sources::StudentNameByStudent, language)
+        .load(object)
+    end
 
     field :recruitments, [Types::RecruitmentType], null: false, extras: [:lookahead]
     def recruitments(lookahead:)

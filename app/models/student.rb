@@ -1,5 +1,10 @@
 class Student < ApplicationRecord
   include ImageSyncable
+  include Translatable
+
+  BAQL_ID_PREFIX = "baql::students::"
+
+  translatable :name
 
   Skill = Data.define(:skill_type, :name)
   Gear = Data.define(:name, :growth_items)
@@ -50,11 +55,13 @@ class Student < ApplicationRecord
 
   def self.sync!
     existing_item_uids = Item.pluck(:uid).to_set
+    raw_students_by_data_path = Constants::LANGUAGE_MAP.keys.index_with { |data_path| SchaleDB::V1::Data.students(data_path) }
 
-    SchaleDB::V1::Data.students.each do |uid, row|
+    raw_students_by_data_path.fetch("kr").each do |uid, row|
       student = find_or_initialize_by(uid: uid)
       update_student_attributes(student, row)
       sync_skill_materials(student, row, existing_item_uids)
+      sync_name_translations(student, raw_students_by_data_path, uid)
       log_and_sync_images_if_updated(student)
     end
 
@@ -89,6 +96,14 @@ class Student < ApplicationRecord
 
   def equipments
     super&.split(",") || []
+  end
+
+  def name(lang = Constants::DEFAULT_LANGUAGE)
+    Translation.find_by(key: "#{translation_key_prefix}::name", language: lang)&.value || read_attribute(:name)
+  end
+
+  def translation_key_prefix
+    "#{BAQL_ID_PREFIX}#{uid}"
   end
 
   def sync_images!
@@ -144,23 +159,30 @@ class Student < ApplicationRecord
 
   def self.update_student_attributes(student, row)
     student.update!(
-      name:         row["Name"],
-      school:       row["School"].downcase.gsub(/^etc$/, "others"),
-      initial_tier: row["StarGrade"],
-      attack_type:  SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
-      defense_type: SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
-      role:         row["SquadType"] == "Main" ? "striker" : "special",
-      position:     SchaleDBMap::POSITIONS[row["Position"]],
-      tactic_role:  SchaleDBMap::TACTIC_ROLES[row["TacticRole"]],
-      birthday:     parse_birthday(row["Birthday"]),
+      name:          row["Name"],
+      school:        row["School"].downcase.gsub(/^etc$/, "others"),
+      initial_tier:  row["StarGrade"],
+      attack_type:   SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
+      defense_type:  SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
+      role:          row["SquadType"] == "Main" ? "striker" : "special",
+      position:      SchaleDBMap::POSITIONS[row["Position"]],
+      tactic_role:   SchaleDBMap::TACTIC_ROLES[row["TacticRole"]],
+      birthday:      parse_birthday(row["Birthday"]),
       alt_names:     Array(row["SearchTags"]),
       family_name:   row["FamilyName"],
       personal_name: row["PersonalName"],
-      equipments:   row["Equipment"].map(&:downcase).join(","),
-      order:        row["DefaultOrder"],
-      schale_db_id: row["PathName"],
-      raw_data:     row,
+      equipments:    row["Equipment"].map(&:downcase).join(","),
+      order:         row["DefaultOrder"],
+      schale_db_id:  row["PathName"],
+      raw_data:      row,
     )
+  end
+
+  def self.sync_name_translations(student, raw_students_by_data_path, uid)
+    Constants::LANGUAGE_MAP.each do |data_path, lang|
+      name = raw_students_by_data_path.dig(data_path, uid, "Name")
+      student.set_name(name, lang) if name.present?
+    end
   end
 
   def self.recruitments_for_student(uid)
@@ -219,7 +241,7 @@ class Student < ApplicationRecord
   def self.log_and_sync_images_if_updated(student)
     return unless student.saved_changes?
 
-    Rails.logger.info("Student #{student.name}(#{student.uid}) has been updated")
+    Rails.logger.info("Student #{student.read_attribute(:name)}(#{student.uid}) has been updated")
     student.sync_images!
   end
 
