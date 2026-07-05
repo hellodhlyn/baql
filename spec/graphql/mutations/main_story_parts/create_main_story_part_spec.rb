@@ -64,19 +64,35 @@ RSpec.describe Mutations::MainStoryParts::CreateMainStoryPart, type: :graphql do
     expect(data.dig("mainStoryPart", "episodeEnd")).to be_nil
   end
 
-  it "returns a friendly error when name translations are empty" do
+  it "creates a part without name translations" do
     result = execute_graphql_as_admin(mutation, variables: {
-      input: { uid: "1-1-3", chapterUid: chapter.uid, sortOrder: 3, name: [] },
+      input: { uid: "1-1-3", chapterUid: chapter.uid, sortOrder: 3 },
     })
     data = result.dig("data", "createMainStoryPart")
 
-    expect(data["errors"]).to eq(["Name must include at least one translation"])
-    expect(data["mainStoryPart"]).to be_nil
+    expect(data["errors"]).to be_empty
+    expect(data.dig("mainStoryPart", "uid")).to eq("1-1-3")
+    expect(data.dig("mainStoryPart", "name")).to be_nil
+  end
+
+  it "treats blank name translations as null" do
+    result = execute_graphql_as_admin(mutation, variables: {
+      input: {
+        uid: "1-1-4",
+        chapterUid: chapter.uid,
+        sortOrder: 4,
+        name: [{ language: "ko", value: " " }],
+      },
+    })
+    data = result.dig("data", "createMainStoryPart")
+
+    expect(data["errors"]).to be_empty
+    expect(data.dig("mainStoryPart", "name")).to be_nil
   end
 
   it "returns validation errors when chapter_uid does not exist" do
     result = execute_graphql_as_admin(mutation, variables: {
-      input: { uid: "1-1-4", chapterUid: "unknown", sortOrder: 4, name: [{ language: "ko", value: "미상" }] },
+      input: { uid: "1-1-5", chapterUid: "unknown", sortOrder: 5, name: [{ language: "ko", value: "미상" }] },
     })
     data = result.dig("data", "createMainStoryPart")
 
@@ -86,7 +102,7 @@ RSpec.describe Mutations::MainStoryParts::CreateMainStoryPart, type: :graphql do
 
   it "requires admin context" do
     result = execute_graphql(mutation, variables: {
-      input: { uid: "1-1-5", chapterUid: chapter.uid, sortOrder: 5, name: [{ language: "ko", value: "권한 없음" }] },
+      input: { uid: "1-1-6", chapterUid: chapter.uid, sortOrder: 6, name: [{ language: "ko", value: "권한 없음" }] },
     })
 
     expect(result["errors"].first["message"]).to include("Authentication required")

@@ -18,12 +18,27 @@ module Mutations
         ActiveRecord::Base.transaction do
           part.assign_attributes(attrs.compact)
           part.save!
-          name&.each { |translation| part.set_name(translation.value, translation.language) }
+          apply_name_translations(part, name)
         end
 
         { main_story_part: part.reload, errors: [] }
       rescue ActiveRecord::RecordInvalid => e
         { main_story_part: nil, errors: e.record.errors.full_messages }
+      end
+
+      private
+
+      def apply_name_translations(part, translations)
+        translations&.each do |translation|
+          key = "#{part.translation_key_prefix}::name"
+          value = translation.value.presence
+
+          if value
+            part.set_name(value, translation.language)
+          else
+            Translation.find_by(key: key, language: translation.language)&.destroy!
+          end
+        end
       end
     end
   end

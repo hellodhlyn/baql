@@ -51,6 +51,21 @@ RSpec.describe Mutations::MainStoryParts::UpdateMainStoryPart, type: :graphql do
     expect(part.name("en")).to eq("Part 1")
   end
 
+  it "clears a name translation when the provided value is blank" do
+    result = execute_graphql_as_admin(mutation, variables: {
+      input: {
+        uid: "1-1-1",
+        name: [{ language: "ko", value: " " }],
+      },
+    })
+    data = result.dig("data", "updateMainStoryPart")
+
+    expect(data["errors"]).to be_empty
+    expect(data.dig("mainStoryPart", "name")).to be_nil
+    expect(part.reload.name("ko")).to be_nil
+    expect(part.name("en")).to eq("Part 1")
+  end
+
   it "returns validation errors when chapter_uid does not exist" do
     result = execute_graphql_as_admin(mutation, variables: {
       input: { uid: "1-1-1", chapterUid: "unknown" },
