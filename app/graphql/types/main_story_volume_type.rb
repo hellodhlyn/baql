@@ -7,15 +7,17 @@ module Types
 
   class MainStoryPartType < Types::Base::Object
     field :uid,           String, null: false
-    field :name,          String, null: true
+    field :name,          String, null: true do
+      argument :language, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
+    end
     field :sort_order,    Int,    null: false
     field :episode_start, Int,    null: true
     field :episode_end,   Int,    null: true
     field :schedules,     [Types::MainStoryPartScheduleType], null: false
 
-    def name
+    def name(language:)
       dataloader
-        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .with(Sources::TranslationByKey, language)
         .load("#{object.translation_key_prefix}::name")
     end
 
@@ -28,13 +30,15 @@ module Types
 
   class MainStoryChapterType < Types::Base::Object
     field :uid,            String, null: false
-    field :name,           String, null: true
+    field :name,           String, null: true do
+      argument :language, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
+    end
     field :chapter_number, Int,    null: false
     field :parts,          [Types::MainStoryPartType], null: false
 
-    def name
+    def name(language:)
       dataloader
-        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .with(Sources::TranslationByKey, language)
         .load("#{object.translation_key_prefix}::name")
     end
 
@@ -49,13 +53,15 @@ module Types
     field :uid,        String, null: false
     field :season,     Int,    null: false
     field :label,      String, null: false
-    field :name,       String, null: true
+    field :name,       String, null: true do
+      argument :language, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
+    end
     field :sort_order, Int,    null: false
     field :chapters,   [Types::MainStoryChapterType], null: false
 
-    def name
+    def name(language:)
       dataloader
-        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
+        .with(Sources::TranslationByKey, language)
         .load("#{object.translation_key_prefix}::name")
     end
 

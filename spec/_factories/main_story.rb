@@ -20,4 +20,11 @@ FactoryBot.define do
     chapter_uid { FactoryBot.create(:main_story_chapter).uid }
     sequence(:sort_order) { |n| n }
   end
+
+  factory :main_story_part_schedule do
+    part_uid { FactoryBot.create(:main_story_part).uid }
+    region { "jp" }
+    released_at { Time.zone.parse("2026-04-01 02:00:00") }
+    confirmed { false }
+  end
 end

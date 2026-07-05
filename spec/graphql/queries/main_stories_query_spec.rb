@@ -9,12 +9,18 @@ RSpec.describe Queries::MainStoriesQuery, type: :graphql do
           season
           label
           sortOrder
+          name
+          nameJa: name(language: ja)
           chapters {
             uid
             chapterNumber
+            name
+            nameJa: name(language: ja)
             parts {
               uid
               sortOrder
+              name
+              nameJa: name(language: ja)
               schedules {
                 region
                 confirmed
@@ -44,7 +50,10 @@ RSpec.describe Queries::MainStoriesQuery, type: :graphql do
       season: 2,
       label: "Vol.1",
       sort_order: 1,
-    )
+    ).tap do |volume|
+      volume.set_name("2부 1권", "ko")
+      volume.set_name("2部 第1巻", "ja")
+    end
   end
   let!(:legacy_chapter) do
     FactoryBot.create(
@@ -116,5 +125,13 @@ RSpec.describe Queries::MainStoriesQuery, type: :graphql do
         ),
       )
     )
+  end
+
+  it "defaults name to the default language and supports an explicit language argument" do
+    result = execute_graphql(query)
+    season_two_story = result["data"]["mainStories"].find { |story| story["uid"] == "2-1" }
+
+    expect(season_two_story["name"]).to eq("2부 1권")
+    expect(season_two_story["nameJa"]).to eq("2部 第1巻")
   end
 end

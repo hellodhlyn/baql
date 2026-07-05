@@ -42,5 +42,20 @@ module Types
     # MiniStory
     field :create_mini_story, mutation: Mutations::MiniStories::CreateMiniStory
     field :update_mini_story, mutation: Mutations::MiniStories::UpdateMiniStory
+
+    # MainStoryVolume
+    field :create_main_story_volume, mutation: Mutations::MainStoryVolumes::CreateMainStoryVolume
+    field :update_main_story_volume, mutation: Mutations::MainStoryVolumes::UpdateMainStoryVolume
+
+    # MainStoryChapter
+    field :create_main_story_chapter, mutation: Mutations::MainStoryChapters::CreateMainStoryChapter
+    field :update_main_story_chapter, mutation: Mutations::MainStoryChapters::UpdateMainStoryChapter
+
+    # MainStoryPart
+    field :create_main_story_part, mutation: Mutations::MainStoryParts::CreateMainStoryPart
+    field :update_main_story_part, mutation: Mutations::MainStoryParts::UpdateMainStoryPart
+
+    # MainStoryPartSchedule
+    field :upsert_main_story_part_schedule, mutation: Mutations::MainStoryPartSchedules::UpsertMainStoryPartSchedule
   end
 end
