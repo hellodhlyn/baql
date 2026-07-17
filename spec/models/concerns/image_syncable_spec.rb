@@ -9,7 +9,7 @@ RSpec.describe ImageSyncable do
 
   let(:s3_client) { instance_double(Aws::S3::Client) }
   let(:bucket) { "static-bucket" }
-  let(:key) { "images/students/standing/13005.webp" }
+  let(:key) { "images/items/5017.webp" }
   let(:body) { "image-body" }
 
   before do

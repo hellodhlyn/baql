@@ -20,3 +20,6 @@
 
 # Ignore storage (uploaded files in development and any SQLite databases).
 /storage/*
+
+# Local-only private import integration. Never publish it in the public BAQL image.
+/private/baql-sync

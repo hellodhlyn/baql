@@ -3,17 +3,6 @@ require "rails_helper"
 RSpec.describe Queries::StudentQuery, type: :graphql do
   subject { Queries::StudentQuery.new(object: nil, context: query_context, field: nil) }
 
-  let(:student_skills) do
-    {
-      "Skills" => {
-        "Ex" => { "Name" => "패닉 브링거" },
-        "Public" => { "Name" => "패닉샷" },
-        "Passive" => { "Name" => "무서운 얼굴" },
-        "ExtraPassive" => { "Name" => "어쩔 수 없네" },
-      },
-    }
-  end
-
   describe "#resolve" do
     before do
       FactoryBot.create(:student, name: "호시노(무장)", uid: "10098", multiclass_uid: "10098")
@@ -87,9 +76,16 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
   end
 
   describe "student skills field" do
-    let!(:student) { FactoryBot.create(:student, uid: "13005", raw_data: student_skills) }
+    let!(:student) do
+      FactoryBot.create(:student, uid: "13005").tap do |record|
+        StudentSkill.create!(student_uid: record.uid, skill_type: "ex", name: "패닉 브링거")
+        StudentSkill.create!(student_uid: record.uid, skill_type: "public", name: "패닉샷")
+        StudentSkill.create!(student_uid: record.uid, skill_type: "passive", name: "무서운 얼굴")
+        StudentSkill.create!(student_uid: record.uid, skill_type: "extra_passive", name: "어쩔 수 없네")
+      end
+    end
 
-    it "returns skill names extracted from raw_data" do
+    it "returns normalized skill names" do
       result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
         query($uid: String!) {
           student(uid: $uid) {
@@ -129,7 +125,7 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
     end
 
     it "returns an empty array when no skills are present" do
-      student.update!(raw_data: {})
+      student.student_skills.delete_all
 
       result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
         query($uid: String!) {
@@ -154,17 +150,11 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
 
     context "when the student has gear data" do
       let!(:student) do
-        FactoryBot.create(
-          :student,
-          uid: "13005",
-          raw_data: {
-            "Gear" => {
-              "Name" => "아루의 엄청 귀중한 지갑",
-              "TierUpMaterial" => [[5017, 150, 151]],
-              "TierUpMaterialAmount" => [[4, 80, 25]],
-            },
-          }
-        )
+        FactoryBot.create(:student, uid: "13005", gear_name: "아루의 엄청 귀중한 지갑").tap do |record|
+          StudentGearGrowthItem.create!(student_uid: record.uid, item_uid: "5017", gear_tier: 2, amount: 4)
+          StudentGearGrowthItem.create!(student_uid: record.uid, item_uid: "150", gear_tier: 2, amount: 80)
+          StudentGearGrowthItem.create!(student_uid: record.uid, item_uid: "151", gear_tier: 2, amount: 25)
+        end
       end
 
       it "returns the gear name and growth items" do
@@ -213,7 +203,7 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
     end
 
     context "when the student does not have gear data" do
-      let!(:student) { FactoryBot.create(:student, uid: "13005", raw_data: { "Gear" => {} }) }
+      let!(:student) { FactoryBot.create(:student, uid: "13005", gear_name: nil) }
 
       it "returns null" do
         result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })

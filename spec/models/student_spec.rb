@@ -1,21 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Student, type: :model do
-  describe "#sync_images!" do
-    it "syncs standing and collection images to the normalized image storage paths" do
-      student = FactoryBot.build(:student, uid: "13005")
-
-      allow(SchaleDB::V1::Images).to receive(:student_standing).with("13005").and_return("standing-image")
-      allow(SchaleDB::V1::Images).to receive(:student_collection).with("13005").and_return("collection-image")
-      allow(Student).to receive(:sync_image!)
-
-      student.sync_images!
-
-      expect(Student).to have_received(:sync_image!).with("images/students/standing/13005.webp", "standing-image")
-      expect(Student).to have_received(:sync_image!).with("images/students/collection/13005.webp", "collection-image")
-    end
-  end
-
   describe ".all_without_multiclass" do
     before do
       FactoryBot.create(:student, uid: "10098", multiclass_uid: "10098")
@@ -25,107 +10,6 @@ RSpec.describe Student, type: :model do
     it "returns all students except for multiclass students" do
       expect(Student.all.pluck(:uid)).to contain_exactly("10098", "10099")
       expect(Student.all_without_multiclass.pluck(:uid)).to contain_exactly("10098")
-    end
-  end
-
-  describe ".sync!" do
-    subject { Student.sync! }
-
-    before do
-      stub_request(:get, "https://schaledb.com/data/kr/students.min.json")
-        .to_return(body: File.read("spec/_fixtures/students.min.json"))
-      stub_request(:get, "https://schaledb.com/data/jp/students.min.json")
-        .to_return(body: {
-          "13005" => { "Name" => "カヨコ" },
-          "10091" => { "Name" => "カズサ（バンド）" },
-        }.to_json)
-      stub_request(:get, "https://schaledb.com/data/en/students.min.json")
-        .to_return(body: {
-          "13005" => { "Name" => "Kayoko" },
-          "10091" => { "Name" => "Kazusa (Band)" },
-        }.to_json)
-
-      allow(SchaleDB::V1::Images).to receive(:student_standing).and_return(nil)
-      allow(SchaleDB::V1::Images).to receive(:student_collection).and_return(nil)
-
-      FactoryBot.create(:item, uid: "183", name: "온전한 로혼치 사본", rarity: 4)
-    end
-
-    context "when the student data does not exist" do
-      it "generates student data from the source URL" do
-        subject
-
-        expect(Student.find_by(uid: "13005")).to have_attributes(
-          name:         "카요코",
-          school:       "gehenna",
-          initial_tier: 2,
-          attack_type:  "explosive",
-          defense_type: "heavy",
-          role:         "striker",
-          position:     "middle",
-          tactic_role:  "support",
-          birthday:     Date.new(0, 3, 17),
-          alt_names:     [],
-          family_name:   "오니카타",
-          personal_name: "카요코",
-          equipments:   ["shoes", "hairpin", "necklace"],
-          order:        19,
-          schale_db_id: "kayoko",
-        )
-      end
-
-      it "stores search tags as alternative names" do
-        subject
-
-        expect(Student.find_by(uid: "10091")).to have_attributes(
-          alt_names:     ["밴즈사"],
-          family_name:   "쿄야마",
-          personal_name: "카즈사",
-        )
-      end
-
-      it "stores localized names as translations while keeping Korean name as fallback" do
-        subject
-
-        student = Student.find_by(uid: "13005")
-
-        expect(student.read_attribute(:name)).to eq("카요코")
-        expect(student.name("ko")).to eq("카요코")
-        expect(student.name("ja")).to eq("カヨコ")
-        expect(student.name("en")).to eq("Kayoko")
-      end
-
-      it "stores the source payload in raw_data" do
-        subject
-
-        student = Student.find_by(uid: "13005")
-
-        expect(student.raw_data["Name"]).to eq("카요코")
-        expect(student.raw_data.dig("Skills", "Ex", "Name")).to eq("패닉 브링거")
-        expect(student.raw_data.dig("Skills", "Public", "Name")).to eq("패닉샷")
-        expect(student.raw_data.dig("Skills", "Passive", "Name")).to eq("무서운 얼굴")
-        expect(student.raw_data.dig("Skills", "ExtraPassive", "Name")).to eq("어쩔 수 없네")
-      end
-    end
-
-    context "when the student data already exists" do
-      before { FactoryBot.create(:student, schale_db_id: "cat_lover") }
-
-      it "updates the existing student data" do
-        expect { subject }.to change { Student.find_by(uid: "13005").schale_db_id }
-          .from("cat_lover").to("kayoko")
-      end
-    end
-
-    context "when the skill material data does not exist" do
-      it "create skill item data" do
-        expect { subject }.to change { StudentSkillItem.count }.by(3)
-        expect(StudentSkillItem.where(student_uid: "13005").pluck(:skill_type, :skill_level, :amount)).to contain_exactly(
-          ["ex", 5, 9],
-          ["normal", 8, 3],
-          ["normal", 9, 8],
-        )
-      end
     end
   end
 
@@ -187,16 +71,11 @@ RSpec.describe Student, type: :model do
 
     context "when the student has gear data" do
       let(:student) do
-        FactoryBot.create(
-          :student,
-          raw_data: {
-            "Gear" => {
-              "Name" => "아루의 엄청 귀중한 지갑",
-              "TierUpMaterial" => [[5017, 150, 151]],
-              "TierUpMaterialAmount" => [[4, 80, 25]],
-            },
-          }
-        )
+        FactoryBot.create(:student, gear_name: "아루의 엄청 귀중한 지갑").tap do |record|
+          StudentGearGrowthItem.create!(student_uid: record.uid, item_uid: "5017", gear_tier: 2, amount: 4)
+          StudentGearGrowthItem.create!(student_uid: record.uid, item_uid: "150", gear_tier: 2, amount: 80)
+          StudentGearGrowthItem.create!(student_uid: record.uid, item_uid: "151", gear_tier: 2, amount: 25)
+        end
       end
 
       it "returns parsed gear data" do
@@ -212,60 +91,23 @@ RSpec.describe Student, type: :model do
     end
 
     context "when the gear data is empty" do
-      let(:student) { FactoryBot.create(:student, raw_data: { "Gear" => {} }) }
+      let(:student) { FactoryBot.create(:student, gear_name: nil) }
 
       it "returns nil" do
         expect(student.gear).to be_nil
       end
     end
 
-    context "when a growth item does not exist in items" do
-      let(:student) do
-        FactoryBot.create(
-          :student,
-          raw_data: {
-            "Gear" => {
-              "Name" => "아루의 엄청 귀중한 지갑",
-              "TierUpMaterial" => [[5017, 999999]],
-              "TierUpMaterialAmount" => [[4, 1]],
-            },
-          }
-        )
-      end
-
-      it "filters the missing growth item out" do
-        expect(student.gear.growth_items).to contain_exactly(
-          have_attributes(gear_tier: 2, item: item_5017, amount: 4),
-        )
-      end
-    end
-
     it "matches the batched GraphQL gear source" do
       students = [
-        FactoryBot.create(
-          :student,
-          uid: "gear-source-1",
-          raw_data: {
-            "Gear" => {
-              "Name" => "아루의 엄청 귀중한 지갑",
-              "TierUpMaterial" => [[5017, 150, 151]],
-              "TierUpMaterialAmount" => [[4, 80, 25]],
-            },
-          },
-        ),
-        FactoryBot.create(
-          :student,
-          uid: "gear-source-2",
-          raw_data: {
-            "Gear" => {
-              "Name" => "빈 재료 테스트",
-              "TierUpMaterial" => [[5017, 999999]],
-              "TierUpMaterialAmount" => [[7, 1]],
-            },
-          },
-        ),
-        FactoryBot.create(:student, uid: "gear-source-empty", raw_data: { "Gear" => {} }),
+        FactoryBot.create(:student, uid: "gear-source-1", gear_name: "아루의 엄청 귀중한 지갑"),
+        FactoryBot.create(:student, uid: "gear-source-2", gear_name: "빈 재료 테스트"),
+        FactoryBot.create(:student, uid: "gear-source-empty", gear_name: nil),
       ]
+      StudentGearGrowthItem.create!(student_uid: "gear-source-1", item_uid: "5017", gear_tier: 2, amount: 4)
+      StudentGearGrowthItem.create!(student_uid: "gear-source-1", item_uid: "150", gear_tier: 2, amount: 80)
+      StudentGearGrowthItem.create!(student_uid: "gear-source-1", item_uid: "151", gear_tier: 2, amount: 25)
+      StudentGearGrowthItem.create!(student_uid: "gear-source-2", item_uid: "5017", gear_tier: 2, amount: 7)
 
       source_gears = Sources::StudentGearByStudent.new.fetch(students)
 

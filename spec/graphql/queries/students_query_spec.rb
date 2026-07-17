@@ -73,17 +73,17 @@ RSpec.describe Queries::StudentsQuery, type: :graphql do
       uid_index = offset + student_index
       item = FactoryBot.create(:item, uid: "gear-item-#{uid_index}", name: "장비 재료 #{uid_index}")
 
-      FactoryBot.create(
+      student = FactoryBot.create(
         :student,
         uid: "gear-student-#{uid_index}",
         name: "장비 학생 #{uid_index}",
-        raw_data: {
-          "Gear" => {
-            "Name" => "애용품 #{uid_index}",
-            "TierUpMaterial" => [[item.uid]],
-            "TierUpMaterialAmount" => [[3]],
-          },
-        },
+        gear_name: "애용품 #{uid_index}",
+      )
+      StudentGearGrowthItem.create!(
+        student_uid: student.uid,
+        item_uid: item.uid,
+        gear_tier: 2,
+        amount: 3,
       )
     end
   end

@@ -4,10 +4,6 @@ module SchaleDB::V1
   class Data
     HOST = "https://schaledb.com"
 
-    def self.students(lang = "kr")
-      get("data/#{lang}/students.min.json")
-    end
-
     def self.events
       get("data/kr/events.min.json")
     end

@@ -1,6 +1,5 @@
 namespace :sync do
   task all: [:environment] do
-    Rake::Task["sync:students"].invoke
     Rake::Task["sync:items"].invoke
     Rake::Task["sync:events"].invoke
     Rake::Task["sync:furnitures"].invoke
@@ -10,15 +9,9 @@ namespace :sync do
     Rake::Task["sync:stages"].invoke
   end
 
-  task students: [:environment] do
-    puts "Syncing students data..."
-    Student.sync!
-  end
-
   task items: [:environment] do
     puts "Syncing items data..."
     Item.sync!
-    StudentFavoriteItem.sync!
   end
 
   task events: [:environment] do

@@ -62,7 +62,9 @@ module Types
       argument :skill_type, Types::Enums::StudentSkillTypeEnum, required: false
     end
     def skills(skill_type: nil)
-      object.skills(skill_type: skill_type)
+      dataloader
+        .with(Sources::StudentSkillsByStudentUid, skill_type: skill_type)
+        .load(object.uid)
     end
 
     field :gear, Types::GearType, null: true

@@ -10,6 +10,5 @@ FactoryBot.define do
     equipments { ["shoes", "hairpin", "necklace"] }
     release_at { nil }
     order { 19 }
-    raw_data { {} }
   end
 end

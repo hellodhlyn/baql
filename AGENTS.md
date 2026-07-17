@@ -133,10 +133,11 @@ uid, name, school, initial_tier, attack_type, defense_type, role, tactic_role,
 position, birthday, equipments(comma-separated string), order, schale_db_id,
 multiclass_uid, release_at, alt_names(string[])
 ```
-- `ImageSyncable`: standing + collection images
+- standing + collection images are extracted and uploaded by the private `baql-sync` pipeline
 - `released`: true when `release_at < now`
-- `sync!`: syncs from SchaleDB students, populates skill materials
+- imported from the private `baql-sync` full snapshot; BAQL does not fetch SchaleDB student data
 - `multiclass_uid`: references the original student uid for multiclass variants
+- `schale_db_id`: preserved nullable legacy identifier; not owned by the importer
 - Cache: `Rails.cache` per uid, 1-minute TTL
 
 #### `StudentSkillItem` — `student_skill_items` table
@@ -149,7 +150,7 @@ student_uid, item_uid, skill_type(ex/normal), skill_level(int), amount
 ```
 student_uid, item_uid, exp, favorite_level, favorited(bool)
 ```
-- `sync!`: computed from SchaleDB items (`Category == "Favor"`) + student `FavorItemTags`
+- replaced transactionally from the private `baql-sync` full snapshot
 
 ---
 
@@ -328,9 +329,8 @@ https://schaledb.com/data/{lang}/{dataset}.min.json
 
 ### Rake Tasks
 ```bash
-rails sync:all          # students + items + furnitures + equipments + currencies
-rails sync:students
-rails sync:items        # Item.sync! + StudentFavoriteItem.sync!
+rails sync:all          # non-student SchaleDB-backed datasets
+rails sync:items        # Item.sync! only; student favorite data comes from baql-sync
 rails sync:furnitures
 rails sync:equipments
 rails sync:currencies
