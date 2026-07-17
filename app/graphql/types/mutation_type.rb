@@ -57,5 +57,8 @@ module Types
 
     # MainStoryPartSchedule
     field :upsert_main_story_part_schedule, mutation: Mutations::MainStoryPartSchedules::UpsertMainStoryPartSchedule
+
+    # ScheduleShift
+    field :shift_content_schedules, mutation: Mutations::ScheduleShifts::ShiftContentSchedules
   end
 end

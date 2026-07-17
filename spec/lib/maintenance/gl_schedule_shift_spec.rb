@@ -65,6 +65,25 @@ RSpec.describe Maintenance::GlScheduleShift do
       expect(student.reload.release_at).to eq(cutoff)
     end
 
+    it "shifts GL mini story schedules" do
+      schedule = FactoryBot.create(
+        :mini_story_schedule,
+        region: "gl",
+        released_at: cutoff,
+      )
+
+      result = described_class.new(cutoff: cutoff, shift_by: -shift_by, dry_run: false).call
+
+      expect(result.total_rows).to eq(1)
+      expect(schedule.reload.released_at).to eq(cutoff - shift_by)
+      expect(result.schedule_updates).to contain_exactly(
+        have_attributes(
+          label: "mini_story_schedules",
+          identifier: "mini_story_uid=#{schedule.mini_story_uid}",
+        ),
+      )
+    end
+
     it "reports when the synced first recruitment is not one of the shifted groups" do
       shifted_group = FactoryBot.create(
         :recruitment_group,

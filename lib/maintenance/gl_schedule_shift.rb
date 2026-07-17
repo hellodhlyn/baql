@@ -66,6 +66,18 @@ module Maintenance
         identify: ->(row) { "mini_event_content_uid=#{row.mini_event_content_uid}, occurrence=#{row.occurrence}" },
       },
       {
+        label: "mini_story_schedules",
+        model: MiniStorySchedule,
+        columns: [:released_at],
+        relation: ->(cutoff) {
+          MiniStorySchedule
+            .where(region: "gl")
+            .where("released_at >= ?", cutoff)
+            .order(:released_at, :mini_story_uid)
+        },
+        identify: ->(row) { "mini_story_uid=#{row.mini_story_uid}" },
+      },
+      {
         label: "main_story_part_schedules",
         model: MainStoryPartSchedule,
         columns: [:released_at],
