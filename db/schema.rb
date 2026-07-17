@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_17_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_17_122000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,7 +30,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_000000) do
     t.string "baql_id", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", null: false
+    t.jsonb "raw_data"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_currencies_on_uid", unique: true
@@ -56,7 +56,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_000000) do
     t.string "category", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", null: false
+    t.jsonb "raw_data"
     t.string "sub_category"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
@@ -150,7 +150,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_000000) do
     t.string "category", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", null: false
+    t.jsonb "raw_data"
     t.string "sub_category"
     t.string "tags", default: [], null: false, array: true
     t.string "uid", null: false
@@ -172,7 +172,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_000000) do
     t.string "category", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", default: {}, null: false
+    t.jsonb "raw_data"
     t.string "sub_category"
     t.string "uid", null: false
     t.datetime "updated_at", null: false

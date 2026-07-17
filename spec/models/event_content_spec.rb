@@ -55,7 +55,6 @@ RSpec.describe EventContent, type: :model do
       FactoryBot.create(:item, uid: "80541", baql_id: "baql::items::80541", category: "coin", rarity: 1, raw_data: { "Id" => 80541 }, name: "엑스포 기념품")
       FactoryBot.create(:item, uid: "80542", baql_id: "baql::items::80542", category: "coin", rarity: 1, raw_data: { "Id" => 80542 }, name: "누군가의 분실물")
 
-      allow(Item).to receive(:copy_image!)
     end
 
     it "duplicates first-run event items when raw_data_rerun is first populated" do
@@ -69,9 +68,6 @@ RSpec.describe EventContent, type: :model do
       expect(Item.find_by!(uid: "85381").name).to eq("엑스포 기념품")
       expect(Item.find_by!(uid: "85382").name).to eq("누군가의 분실물")
 
-      expect(Item).to have_received(:copy_image!).with("images/resources/items/80540.webp", "images/resources/items/85380.webp")
-      expect(Item).to have_received(:copy_image!).with("images/resources/items/80541.webp", "images/resources/items/85381.webp")
-      expect(Item).to have_received(:copy_image!).with("images/resources/items/80542.webp", "images/resources/items/85382.webp")
     end
 
     it "does not duplicate again once raw_data_rerun was already present" do
@@ -81,8 +77,6 @@ RSpec.describe EventContent, type: :model do
       expect {
         event_content.update!(raw_data_rerun: rerun_raw.merge("shop" => {}))
       }.not_to change { Item.where(uid: %w[85380 85381 85382]).count }
-
-      expect(Item).to have_received(:copy_image!).exactly(3).times
     end
   end
 

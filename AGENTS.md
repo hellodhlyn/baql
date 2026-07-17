@@ -1,6 +1,6 @@
 # BAQL — Model & Architecture Reference
 
-> GraphQL API for Blue Archive. Fetches game data from SchaleDB (schaledb.com) and serves it via GraphQL.
+> GraphQL API for Blue Archive. Serves data from private BAQL Sync snapshots and the remaining SchaleDB-backed domains.
 > Used by [mollulog.net](https://mollulog.net)
 
 ## Tech Stack
@@ -12,7 +12,7 @@
 | API | GraphQL (`graphql` gem) |
 | DB | PostgreSQL |
 | Storage | AWS S3 (images) |
-| Data Source | SchaleDB (`lib/schale_db/v1/data.rb`) |
+| Data Source | BAQL Sync snapshots + SchaleDB (`lib/schale_db/v1/data.rb`) |
 
 ---
 
@@ -25,8 +25,9 @@
 uid, baql_id, rarity, raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/currencies/:uid`
-- `sync!`: SchaleDB currencies API → DB upsert + Translation upsert
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/currencies/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::currencies::{uid}`
 
 #### `Item` — `items` table
@@ -34,9 +35,10 @@ uid, baql_id, rarity, raw_data(jsonb)
 uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/items/:uid`
-- `sync!`: SchaleDB items API → DB upsert + Translation upsert
-- `duplicate!(new_uid)`: duplicates the item including its image
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/items/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
+- `duplicate!(new_uid)`: legacy rerun compatibility; duplicates item data and translations only
 - `baql_id` format: `baql::items::{uid}`
 
 #### `Equipment` — `equipments` table
@@ -44,7 +46,9 @@ uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/equipments/:uid`
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/equipments/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::equipments::{uid}`
 
 #### `Furniture` — `furnitures` table
@@ -52,7 +56,9 @@ uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 uid, baql_id, category, sub_category, rarity, tags(string[]), raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/furnitures/:uid`
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/furnitures/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::furnitures::{uid}`
 
 ---

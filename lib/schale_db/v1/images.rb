@@ -2,22 +2,6 @@ module SchaleDB::V1
   class Images
     HOST = "https://schaledb.com"
 
-    def self.item_icon(item_id)
-      get("images/item/icon/#{item_id}.webp")
-    end
-
-    def self.furniture_icon(furniture_id)
-      get("images/furniture/icon/#{furniture_id}.webp")
-    end
-
-    def self.equipment_icon(equipment_id)
-      get("images/equipment/icon/#{equipment_id}.webp")
-    end
-
-    def self.currency_icon(currency_id)
-      get("images/item/icon/#{currency_id}.webp")
-    end
-
     def self.event_logo(event_uid, locale_suffix)
       get("images/eventlogo/#{event_uid}_#{locale_suffix}.webp")
     end

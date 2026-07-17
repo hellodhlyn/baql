@@ -8,22 +8,6 @@ module SchaleDB::V1
       get("data/kr/events.min.json")
     end
 
-    def self.items(lang = "kr")
-      get("data/#{lang}/items.min.json")
-    end
-
-    def self.furnitures(lang = "kr")
-      get("data/#{lang}/furniture.min.json")
-    end
-
-    def self.equipments(lang = "kr")
-      get("data/#{lang}/equipment.min.json")
-    end
-
-    def self.currencies(lang = "kr")
-      get("data/#{lang}/currency.min.json")
-    end
-
     def self.raids(lang = "kr")
       get("data/#{lang}/raids.min.json")
     end
