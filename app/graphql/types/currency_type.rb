@@ -3,13 +3,6 @@ module Types
     implements Types::ResourceInterface
 
     field :uid, String, null: false
-    field :name, String, null: false
     field :rarity, Int, null: false
-
-    def name
-      dataloader
-        .with(Sources::TranslationByKey, Constants::DEFAULT_LANGUAGE)
-        .load("#{object.translation_key_prefix}::name")
-    end
   end
 end

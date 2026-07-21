@@ -22,8 +22,12 @@ RSpec.describe Queries::ItemsQuery, type: :graphql do
 
   describe "GraphQL execution" do
     before do
-      FactoryBot.create(:item, uid: "1", name: "첫 번째 아이템")
-      FactoryBot.create(:item, uid: "2", name: "두 번째 아이템")
+      item = FactoryBot.create(:item, uid: "1", name: "첫 번째 아이템")
+      item.set_name("First item", "en")
+      item.set_description("첫 번째 아이템 설명", "ko")
+      item.set_description("First item description", "en")
+      item_without_english_translation = FactoryBot.create(:item, uid: "2", name: "두 번째 아이템")
+      item_without_english_translation.set_description("두 번째 아이템 설명", "ko")
       FactoryBot.create(:item, uid: "3", name: "세 번째 아이템")
     end
 
@@ -42,6 +46,44 @@ RSpec.describe Queries::ItemsQuery, type: :graphql do
 
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "items").map { |item| item["uid"] }).to eq(%w[1 2 3])
+    end
+
+    it "returns item names and descriptions in the requested language" do
+      result = execute_graphql(<<~GRAPHQL)
+        query {
+          items(uids: ["1"]) {
+            name
+            englishName: name(lang: en)
+            description
+            englishDescription: description(lang: en)
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "items", 0)).to eq(
+        "name" => "첫 번째 아이템",
+        "englishName" => "First item",
+        "description" => "첫 번째 아이템 설명",
+        "englishDescription" => "First item description",
+      )
+    end
+
+    it "falls back to Korean when the requested translations are missing" do
+      result = execute_graphql(<<~GRAPHQL)
+        query {
+          items(uids: ["2"]) {
+            name(lang: en)
+            description(lang: en)
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "items", 0)).to eq(
+        "name" => "두 번째 아이템",
+        "description" => "두 번째 아이템 설명",
+      )
     end
 
     it "batch loads item names" do

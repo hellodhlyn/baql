@@ -2,14 +2,20 @@
 
 module Sources
   class TranslationByKey < GraphQL::Dataloader::Source
-    def initialize(language)
+    def initialize(language, fallback_language: nil)
       @language = language
+      @fallback_language = fallback_language
     end
 
     def fetch(keys)
-      translations = Translation.where(key: keys, language: @language).index_by(&:key)
+      languages = [@language, @fallback_language].compact.uniq
+      translations = Translation.where(key: keys, language: languages).index_by do |translation|
+        [translation.key, translation.language]
+      end
 
-      keys.map { |key| translations[key]&.value }
+      keys.map do |key|
+        translations[[key, @language]]&.value || translations[[key, @fallback_language]]&.value
+      end
     end
   end
 end
