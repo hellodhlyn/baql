@@ -3,13 +3,31 @@ require "rails_helper"
 RSpec.describe Student, type: :model do
   describe ".all_without_multiclass" do
     before do
-      FactoryBot.create(:student, uid: "10098", multiclass_uid: "10098")
-      FactoryBot.create(:student, uid: "10099", multiclass_uid: "10098")
+      FactoryBot.create(:student, uid: "10098", student_variant_uid: "armed-hoshino", order: 188)
+      FactoryBot.create(:student, uid: "10099", student_variant_uid: "armed-hoshino", order: 189)
     end
 
     it "returns all students except for multiclass students" do
       expect(Student.all.pluck(:uid)).to contain_exactly("10098", "10099")
       expect(Student.all_without_multiclass.pluck(:uid)).to contain_exactly("10098")
+    end
+
+    it "keeps the legacy multiclass rule for rows without a student variant key" do
+      Student.delete_all
+      FactoryBot.create(:student, uid: "10098", student_variant_uid: nil, multiclass_uid: "10098")
+      FactoryBot.create(:student, uid: "10099", student_variant_uid: nil, multiclass_uid: "10098")
+
+      expect(Student.all_without_multiclass.pluck(:uid)).to contain_exactly("10098")
+    end
+  end
+
+  describe ".multiclass_students" do
+    it "returns every student in variants with multiple students" do
+      FactoryBot.create(:student, uid: "10098", student_variant_uid: "armed-hoshino")
+      FactoryBot.create(:student, uid: "10099", student_variant_uid: "armed-hoshino")
+      FactoryBot.create(:student, uid: "10045", student_variant_uid: "swimsuit-hoshino")
+
+      expect(Student.multiclass_students.pluck(:uid)).to contain_exactly("10098", "10099")
     end
   end
 

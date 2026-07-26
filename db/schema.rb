@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_26_001000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_26_003000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -526,6 +526,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_26_001000) do
     t.string "attack_type", null: false
     t.date "birthday"
     t.jsonb "catalog_data", default: {}, null: false
+    t.string "character_group_uid"
     t.datetime "created_at", null: false
     t.string "defense_type", null: false
     t.string "equipments"
@@ -537,13 +538,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_26_001000) do
     t.bigint "order", null: false
     t.string "personal_name"
     t.string "position"
+    t.jsonb "raw_data", default: {}, null: false
     t.datetime "release_at"
     t.string "role", null: false
     t.string "schale_db_id"
     t.string "school", null: false
+    t.string "student_variant_uid"
     t.string "tactic_role"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
+    t.index ["character_group_uid"], name: "index_students_on_character_group_uid"
+    t.index ["student_variant_uid"], name: "index_students_on_student_variant_uid"
     t.index ["uid"], name: "index_students_on_uid", unique: true
   end
 

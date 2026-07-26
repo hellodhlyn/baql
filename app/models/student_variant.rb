@@ -1,0 +1,1 @@
+StudentVariant = Data.define(:uid)

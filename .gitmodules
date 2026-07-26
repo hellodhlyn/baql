@@ -1,6 +1,3 @@
 [submodule "spec/_fixtures"]
 	path = spec/_fixtures
 	url = git@github.com:dTrippers/baql-fixtures.git
-[submodule "private/baql-sync"]
-	path = private/baql-sync
-	url = ../baql-sync.git

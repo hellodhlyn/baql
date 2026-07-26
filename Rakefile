@@ -4,6 +4,3 @@
 require_relative "config/application"
 
 Rails.application.load_tasks
-
-private_tasks = Rails.root.join("private", "baql-sync", "integrations", "baql", "tasks", "*.rake")
-Dir.glob(private_tasks).sort.each { |path| import path }

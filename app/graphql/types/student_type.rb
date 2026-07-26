@@ -27,6 +27,8 @@ module Types
     field :order, Int, null: false
     field :schale_db_id, String, null: true
     field :catalog, Types::StudentCatalogType::StudentDataType, null: true
+    field :character, Types::StudentCharacterType, null: false
+    field :student_variant, Types::StudentVariantType, null: false
 
     def catalog
       object.catalog_data.presence

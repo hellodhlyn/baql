@@ -23,12 +23,10 @@ class NormalizeStudentSkillsAndGear < ActiveRecord::Migration[8.0]
     end
 
     backfill_normalized_data
-    remove_column :students, :raw_data
   end
 
   def down
-    add_column :students, :raw_data, :jsonb, null: false, default: {}
-    raise ActiveRecord::IrreversibleMigration, "student raw_data cannot be reconstructed losslessly"
+    raise ActiveRecord::IrreversibleMigration, "normalized student tables and columns are retained by policy"
   end
 
   private

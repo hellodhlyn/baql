@@ -15,7 +15,17 @@ class Student < ApplicationRecord
 
   after_save :flush_cache
 
-  scope :all_without_multiclass, -> { where("multiclass_uid is null or multiclass_uid = uid") }
+  scope :all_without_multiclass, -> {
+    primary_variant_uids = unscoped
+      .where.not(student_variant_uid: nil)
+      .select("DISTINCT ON (student_variant_uid) uid")
+      .order(:student_variant_uid, :order, :uid)
+    grouped_students = where(uid: primary_variant_uids)
+    legacy_students = where(student_variant_uid: nil)
+      .where("multiclass_uid is null or multiclass_uid = uid")
+
+    grouped_students.or(legacy_students)
+  }
 
   def self.find_by_uid(uid)
     Rails.cache.fetch(cache_key(uid), expires_in: 1.minute) do
@@ -24,7 +34,12 @@ class Student < ApplicationRecord
   end
 
   def self.multiclass_students
-    self.where("multiclass_uid is not null")
+    multiclass_variant_uids = where.not(student_variant_uid: nil)
+      .group(:student_variant_uid)
+      .having("COUNT(*) > 1")
+      .select(:student_variant_uid)
+
+    where(student_variant_uid: multiclass_variant_uids)
   end
 
   def self.sync_recruitment_dates!(uids)
@@ -41,6 +56,14 @@ class Student < ApplicationRecord
 
   def released
     self.release_at.present? && self.release_at < Time.zone.now
+  end
+
+  def character
+    StudentCharacter.new(uid: character_group_uid)
+  end
+
+  def student_variant
+    StudentVariant.new(uid: student_variant_uid)
   end
 
   def equipments

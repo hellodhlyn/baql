@@ -90,8 +90,8 @@ RSpec.describe Queries::StudentsQuery, type: :graphql do
 
   describe "#resolve" do
     before do
-      FactoryBot.create(:student, name: "호시노(무장)", uid: "10098", multiclass_uid: "10098")
-      FactoryBot.create(:student, name: "호시노(무장)", uid: "10099", multiclass_uid: "10098")
+      FactoryBot.create(:student, name: "호시노(무장)", uid: "10098", student_variant_uid: "armed-hoshino", order: 188)
+      FactoryBot.create(:student, name: "호시노(무장)", uid: "10099", student_variant_uid: "armed-hoshino", order: 189)
     end
 
     context "when uids is empty" do
@@ -106,6 +106,136 @@ RSpec.describe Queries::StudentsQuery, type: :graphql do
         results = subject.resolve(uids: ["10098", "10099"])
         expect(results.pluck(:uid)).to contain_exactly("10098", "10099")
       end
+    end
+  end
+
+  describe "student variant fields" do
+    def create_hoshino_variants(offset: 0)
+      character_uid = "hoshino-#{offset}"
+      FactoryBot.create(
+        :student,
+        uid: "hoshino-#{offset}-default",
+        name: "호시노",
+        character_group_uid: character_uid,
+        student_variant_uid: "hoshino-#{offset}-default",
+        order: offset * 10,
+      )
+      FactoryBot.create(
+        :student,
+        uid: "hoshino-#{offset}-armed-tank",
+        name: "호시노(무장)",
+        character_group_uid: character_uid,
+        student_variant_uid: "hoshino-#{offset}-armed",
+        order: offset * 10 + 1,
+      )
+      FactoryBot.create(
+        :student,
+        uid: "hoshino-#{offset}-armed-attacker",
+        name: "호시노(무장)",
+        character_group_uid: character_uid,
+        student_variant_uid: "hoshino-#{offset}-armed",
+        order: offset * 10 + 2,
+      )
+    end
+
+    before { create_hoshino_variants }
+
+    it "returns character variants, their students, and the primary student" do
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: "hoshino-0-armed-attacker" })
+        query($uid: String!) {
+          student(uid: $uid) {
+            uid
+            studentVariant {
+              uid
+              isMulticlass
+              primaryStudent { uid }
+              students { uid }
+            }
+            character {
+              uid
+              studentVariants {
+                uid
+                isMulticlass
+                primaryStudent { uid }
+                students { uid }
+              }
+            }
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "student", "studentVariant")).to eq(
+        "uid" => "hoshino-0-armed",
+        "isMulticlass" => true,
+        "primaryStudent" => { "uid" => "hoshino-0-armed-tank" },
+        "students" => [
+          { "uid" => "hoshino-0-armed-tank" },
+          { "uid" => "hoshino-0-armed-attacker" },
+        ],
+      )
+      expect(result.dig("data", "student", "character", "uid")).to eq("hoshino-0")
+      expect(result.dig("data", "student", "character", "studentVariants")).to contain_exactly(
+        {
+          "uid" => "hoshino-0-default",
+          "isMulticlass" => false,
+          "primaryStudent" => { "uid" => "hoshino-0-default" },
+          "students" => [{ "uid" => "hoshino-0-default" }],
+        },
+        {
+          "uid" => "hoshino-0-armed",
+          "isMulticlass" => true,
+          "primaryStudent" => { "uid" => "hoshino-0-armed-tank" },
+          "students" => [
+            { "uid" => "hoshino-0-armed-tank" },
+            { "uid" => "hoshino-0-armed-attacker" },
+          ],
+        },
+      )
+    end
+
+    it "keeps Student query counts constant as the number of characters grows" do
+      result, queries = capture_sql do
+        execute_graphql(<<~GRAPHQL)
+          query {
+            students {
+              uid
+              character {
+                studentVariants {
+                  uid
+                  isMulticlass
+                  primaryStudent { uid }
+                  students { uid }
+                }
+              }
+            }
+          }
+        GRAPHQL
+      end
+
+      create_hoshino_variants(offset: 1)
+      larger_result, larger_queries = capture_sql do
+        execute_graphql(<<~GRAPHQL)
+          query {
+            students {
+              uid
+              character {
+                studentVariants {
+                  uid
+                  isMulticlass
+                  primaryStudent { uid }
+                  students { uid }
+                }
+              }
+            }
+          }
+        GRAPHQL
+      end
+
+      expect(result["errors"]).to be_nil
+      expect(larger_result["errors"]).to be_nil
+      expect(larger_queries.count { |payload| payload[:name] == "Student Load" })
+        .to eq(queries.count { |payload| payload[:name] == "Student Load" })
     end
   end
 

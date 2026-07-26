@@ -1,10 +1,39 @@
 module Types
   class SkillType < Types::Base::Object
+    class SkillModifierActivationEnum < Types::Base::Enum
+      graphql_name "StudentSkillModifierActivation"
+
+      value "UNCONDITIONAL", value: "unconditional"
+      value "CONDITIONAL", value: "conditional"
+    end
+
+    class SkillModifierPersistenceEnum < Types::Base::Enum
+      graphql_name "StudentSkillModifierPersistence"
+
+      value "PERMANENT", value: "permanent"
+      value "TEMPORARY", value: "temporary"
+    end
+
+    class SkillStatModifierType < Types::StudentCatalogType::JsonObject
+      graphql_name "StudentSkillStatModifier"
+
+      field :stat, Types::StudentCatalogType::StudentStatEnum, null: false
+      field :kind, Types::StudentCatalogType::StatModifierKindEnum, null: false
+      field :value, Int, null: false
+      field :activation, SkillModifierActivationEnum, null: false
+      field :persistence, SkillModifierPersistenceEnum, null: false
+    end
+
     class SkillLevelType < Types::StudentCatalogType::JsonObject
       graphql_name "StudentSkillLevel"
 
       field :level, Int, null: false
       field :cost, Int, null: true
+      field :stat_modifiers, [SkillStatModifierType, null: false], null: false
+
+      def stat_modifiers
+        value(:stat_modifiers, [])
+      end
     end
 
     class SkillDescriptionParameterValueType < Types::StudentCatalogType::JsonObject

@@ -141,6 +141,66 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "student", "skills")).to eq([])
     end
+
+    it "returns permanent stat modifiers for the base and upgraded Hoshino passive skills" do
+      StudentSkill.create!(
+        student_uid: student.uid,
+        uid: "CH0258_TankerPassive01",
+        skill_type: "passive",
+        name: "진지 구축",
+        levels: [{
+          "level" => 1,
+          "cost" => 0,
+          "stat_modifiers" => [
+            { "stat" => "attack_power", "kind" => "coefficient", "value" => 1120, "activation" => "unconditional", "persistence" => "permanent" },
+            { "stat" => "max_hp", "kind" => "coefficient", "value" => 1120, "activation" => "unconditional", "persistence" => "permanent" },
+          ],
+        }],
+      )
+      StudentSkill.create!(
+        student_uid: student.uid,
+        uid: "CH0258_TankerWeaponPassive01",
+        skill_type: "passive",
+        name: "진지 구축+",
+        levels: [{
+          "level" => 1,
+          "cost" => 0,
+          "stat_modifiers" => [
+            { "stat" => "attack_power", "kind" => "base", "value" => 117, "activation" => "unconditional", "persistence" => "permanent" },
+            { "stat" => "attack_power", "kind" => "coefficient", "value" => 1120, "activation" => "unconditional", "persistence" => "permanent" },
+            { "stat" => "max_hp", "kind" => "base", "value" => 3830, "activation" => "unconditional", "persistence" => "permanent" },
+            { "stat" => "max_hp", "kind" => "coefficient", "value" => 1120, "activation" => "unconditional", "persistence" => "permanent" },
+          ],
+        }],
+      )
+
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
+        query($uid: String!) {
+          student(uid: $uid) {
+            skills(skillType: passive, includeVariants: true) {
+              uid
+              levels {
+                level
+                statModifiers { stat kind value activation persistence }
+              }
+            }
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      skills = result.dig("data", "student", "skills").index_by { |skill| skill.fetch("uid") }
+      expect(skills.fetch("CH0258_TankerPassive01").dig("levels", 0, "statModifiers")).to contain_exactly(
+        { "stat" => "ATTACK_POWER", "kind" => "COEFFICIENT", "value" => 1120, "activation" => "UNCONDITIONAL", "persistence" => "PERMANENT" },
+        { "stat" => "MAX_HP", "kind" => "COEFFICIENT", "value" => 1120, "activation" => "UNCONDITIONAL", "persistence" => "PERMANENT" },
+      )
+      expect(skills.fetch("CH0258_TankerWeaponPassive01").dig("levels", 0, "statModifiers")).to contain_exactly(
+        { "stat" => "ATTACK_POWER", "kind" => "BASE", "value" => 117, "activation" => "UNCONDITIONAL", "persistence" => "PERMANENT" },
+        { "stat" => "ATTACK_POWER", "kind" => "COEFFICIENT", "value" => 1120, "activation" => "UNCONDITIONAL", "persistence" => "PERMANENT" },
+        { "stat" => "MAX_HP", "kind" => "BASE", "value" => 3830, "activation" => "UNCONDITIONAL", "persistence" => "PERMANENT" },
+        { "stat" => "MAX_HP", "kind" => "COEFFICIENT", "value" => 1120, "activation" => "UNCONDITIONAL", "persistence" => "PERMANENT" },
+      )
+    end
   end
 
   describe "student gear field" do

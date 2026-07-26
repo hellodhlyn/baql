@@ -109,6 +109,9 @@ module Types
         heal_rate
         enhance_chemical_rate
         enhance_composite_armor_rate
+        enhance_ex_damage_rate
+        enhance_basics_damage_rate
+        reduce_weak_damaged_rate
         range
         ammo_count
         critical_resist_point
