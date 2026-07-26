@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_17_122000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_26_001000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -457,6 +457,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_122000) do
     t.index ["uid"], name: "index_stages_on_uid", unique: true
   end
 
+  create_table "student_catalogs", force: :cascade do |t|
+    t.string "assets_version"
+    t.string "client_version"
+    t.datetime "created_at", null: false
+    t.jsonb "data", default: {}, null: false
+    t.string "database_sha256", null: false
+    t.string "region", null: false
+    t.datetime "updated_at", null: false
+    t.string "version", null: false
+    t.index ["region"], name: "index_student_catalogs_on_region", unique: true
+    t.index ["version"], name: "index_student_catalogs_on_version"
+  end
+
   create_table "student_favorite_items", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "exp", null: false
@@ -494,11 +507,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_122000) do
 
   create_table "student_skills", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "icon_asset_key"
+    t.jsonb "levels", default: [], null: false
+    t.jsonb "links", default: {}, null: false
+    t.jsonb "localizations", default: {}, null: false
     t.string "name", null: false
     t.string "skill_type", null: false
     t.string "student_uid", null: false
+    t.string "uid", null: false
     t.datetime "updated_at", null: false
-    t.index ["student_uid", "skill_type"], name: "index_student_skills_on_student_uid_and_skill_type", unique: true
+    t.index ["student_uid", "skill_type"], name: "index_student_skills_on_student_uid_and_skill_type"
+    t.index ["student_uid", "uid"], name: "index_student_skills_on_student_uid_and_uid", unique: true
   end
 
   create_table "students", force: :cascade do |t|
@@ -506,6 +525,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_122000) do
     t.datetime "archive_at"
     t.string "attack_type", null: false
     t.date "birthday"
+    t.jsonb "catalog_data", default: {}, null: false
     t.datetime "created_at", null: false
     t.string "defense_type", null: false
     t.string "equipments"

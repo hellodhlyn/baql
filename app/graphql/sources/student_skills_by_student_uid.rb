@@ -11,7 +11,7 @@ module Sources
 
       student_uids.map do |student_uid|
         Array(records_by_student_uid[student_uid]).sort_by do |skill|
-          StudentSkill::TYPE_ORDER.fetch(skill.skill_type)
+          [StudentSkill::TYPE_ORDER.fetch(skill.skill_type), skill.uid]
         end
       end
     end

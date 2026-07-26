@@ -26,6 +26,11 @@ module Types
     field :released, Boolean, null: false
     field :order, Int, null: false
     field :schale_db_id, String, null: true
+    field :catalog, Types::StudentCatalogType::StudentDataType, null: true
+
+    def catalog
+      object.catalog_data.presence
+    end
 
     def name(lang:)
       dataloader
@@ -60,11 +65,27 @@ module Types
 
     field :skills, [Types::SkillType], null: false do
       argument :skill_type, Types::Enums::StudentSkillTypeEnum, required: false
+      argument :include_variants, Boolean, required: false, default_value: false
     end
-    def skills(skill_type: nil)
-      dataloader
+    def skills(skill_type: nil, include_variants: false)
+      skills = dataloader
         .with(Sources::StudentSkillsByStudentUid, skill_type: skill_type)
         .load(object.uid)
+      return skills if include_variants
+
+      baseline = Array(object.catalog_data["skill_configurations"]).find do |configuration|
+        configuration["form_index"].zero? &&
+          configuration["minimum_weapon_star"].zero? &&
+          configuration["minimum_gear_tier"].zero?
+      end
+      return skills unless baseline
+
+      baseline_uids = baseline.fetch("slots").filter_map do |slot|
+        slot.fetch("skills")
+          .find { |reference| reference["position"].zero? }
+          &.fetch("skill_uid")
+      end
+      skills.select { |skill| baseline_uids.include?(skill.uid) }
     end
 
     field :gear, Types::GearType, null: true

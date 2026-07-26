@@ -14,6 +14,7 @@ module Types
     field :raid_bosses, resolver: Queries::RaidBossesQuery
     field :student, resolver: Queries::StudentQuery
     field :students, resolver: Queries::StudentsQuery
+    field :student_catalog, resolver: Queries::StudentCatalogQuery
     field :items, resolver: Queries::ItemsQuery
     field :equipments, resolver: Queries::EquipmentsQuery
     field :main_stories, resolver: Queries::MainStoriesQuery

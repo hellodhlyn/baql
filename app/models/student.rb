@@ -58,7 +58,7 @@ class Student < ApplicationRecord
   def skills(skill_type: nil)
     records = student_skills
     records = records.where(skill_type: skill_type) if skill_type.present?
-    records.to_a.sort_by { |skill| StudentSkill::TYPE_ORDER.fetch(skill.skill_type) }
+    records.to_a.sort_by { |skill| [StudentSkill::TYPE_ORDER.fetch(skill.skill_type), skill.uid] }
   end
 
   def gear
