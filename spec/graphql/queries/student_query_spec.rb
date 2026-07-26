@@ -75,6 +75,72 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
     end
   end
 
+  describe "student club field" do
+    it "returns localized club names with Korean fallback" do
+      student = FactoryBot.create(:student, uid: "club-student", club: "kohshinjo68")
+      Translation.create!(
+        key: "baql::student_clubs::kohshinjo68::name",
+        language: "ko",
+        value: "흥신소 68",
+      )
+      Translation.create!(
+        key: "baql::student_clubs::kohshinjo68::name",
+        language: "ja",
+        value: "便利屋68",
+      )
+
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
+        query($uid: String!) {
+          student(uid: $uid) {
+            club {
+              uid
+              koreanName: name
+              japaneseName: name(lang: ja)
+              englishName: name(lang: en)
+            }
+          }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "student", "club")).to eq(
+        "uid" => "kohshinjo68",
+        "koreanName" => "흥신소 68",
+        "japaneseName" => "便利屋68",
+        "englishName" => "흥신소 68",
+      )
+    end
+
+    it "returns null when the student has no club" do
+      student = FactoryBot.create(:student, uid: "clubless-student", club: nil)
+
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
+        query($uid: String!) {
+          student(uid: $uid) { club { uid name } }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "student", "club")).to be_nil
+    end
+
+    it "keeps a missing club translation null instead of exposing the uid" do
+      student = FactoryBot.create(:student, uid: "untranslated-club-student", club: "untranslated")
+
+      result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
+        query($uid: String!) {
+          student(uid: $uid) { club { uid name } }
+        }
+      GRAPHQL
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "student", "club")).to eq(
+        "uid" => "untranslated",
+        "name" => nil,
+      )
+    end
+  end
+
   describe "student skills field" do
     let!(:student) do
       FactoryBot.create(:student, uid: "13005").tap do |record|

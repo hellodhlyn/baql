@@ -13,6 +13,7 @@ module Types
     field :family_name, String, null: true
     field :personal_name, String, null: true
     field :school, String, null: false
+    field :club, Types::StudentClubType, null: true
     field :initial_tier, Int, null: false
     field :attack_type, Types::Enums::AttackType, null: false
     field :defense_type, Types::Enums::DefenseType, null: false
@@ -38,6 +39,10 @@ module Types
       dataloader
         .with(Sources::StudentNameByStudent, lang)
         .load(object)
+    end
+
+    def club
+      StudentClub.new(uid: object.club) if object.club.present?
     end
 
     field :recruitments, [Types::RecruitmentType], null: false, extras: [:lookahead]

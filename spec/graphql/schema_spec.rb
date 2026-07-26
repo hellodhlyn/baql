@@ -61,6 +61,17 @@ RSpec.describe "GraphQL schema", type: :graphql do
     expect(variant_type.fields).to include("uid", "isMulticlass", "primaryStudent", "students")
   end
 
+  it "exposes nullable student clubs with localized names" do
+    student_type = BaqlSchema.types["Student"]
+    club_type = BaqlSchema.types["StudentClub"]
+    name_field = club_type.fields.fetch("name")
+
+    expect(student_type.fields.fetch("club").type.to_type_signature).to eq("StudentClub")
+    expect(club_type.fields).to include("uid", "name")
+    expect(name_field.arguments.fetch("lang").type.to_type_signature).to eq("Language")
+    expect(name_field.arguments.fetch("lang").default_value).to eq(Constants::DEFAULT_LANGUAGE)
+  end
+
   it "exposes structured skill stat modifiers" do
     level_type = BaqlSchema.types["StudentSkillLevel"]
     modifier_type = BaqlSchema.types["StudentSkillStatModifier"]

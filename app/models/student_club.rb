@@ -1,0 +1,1 @@
+StudentClub = Data.define(:uid)
