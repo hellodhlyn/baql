@@ -1,72 +1,31 @@
 class Student < ApplicationRecord
-  include ImageSyncable
   include Translatable
 
   BAQL_ID_PREFIX = "baql::students::"
+  TACTIC_ROLES = %w[attacker tank support healer tactical_support].freeze
+  POSITIONS = %w[back front middle].freeze
 
   translatable :name
 
-  Skill = Data.define(:skill_type, :name)
   Gear = Data.define(:name, :growth_items)
   GearGrowthItem = Data.define(:gear_tier, :item, :amount)
 
-  SKILL_TYPES = {
-    "Ex" => "ex",
-    "Public" => "public",
-    "Passive" => "passive",
-    "ExtraPassive" => "extra_passive",
-  }.freeze
+  has_many :student_skills, primary_key: :uid, foreign_key: :student_uid, dependent: :delete_all
+  has_many :student_gear_growth_items, primary_key: :uid, foreign_key: :student_uid, dependent: :delete_all
 
   after_save :flush_cache
 
-  scope :all_without_multiclass, -> { where("multiclass_uid is null or multiclass_uid = uid") }
+  scope :all_without_multiclass, -> {
+    primary_variant_uids = unscoped
+      .where.not(student_variant_uid: nil)
+      .select("DISTINCT ON (student_variant_uid) uid")
+      .order(:student_variant_uid, :order, :uid)
+    grouped_students = where(uid: primary_variant_uids)
+    legacy_students = where(student_variant_uid: nil)
+      .where("multiclass_uid is null or multiclass_uid = uid")
 
-  class SchaleDBMap
-    ATTACK_TYPES = {
-      "Explosion" => "explosive",
-      "Pierce"    => "piercing",
-      "Mystic"    => "mystic",
-      "Sonic"     => "sonic",
-      "Chemical"  => "chemical",
-    }
-
-    DEFENSE_TYPES = {
-      "LightArmor"     => "light",
-      "HeavyArmor"     => "heavy",
-      "Unarmed"        => "special",
-      "ElasticArmor"   => "elastic",
-      "CompositeArmor" => "composite",
-    }
-
-    TACTIC_ROLES = {
-      "DamageDealer" => "attacker",
-      "Tanker"       => "tank",
-      "Supporter"    => "support",
-      "Healer"       => "healer",
-      "Vehicle"      => "tactical_support",
-    }
-
-    POSITIONS = {
-      "Back"   => "back",
-      "Front"  => "front",
-      "Middle" => "middle",
-    }
-  end
-
-  def self.sync!
-    existing_item_uids = Item.pluck(:uid).to_set
-    raw_students_by_data_path = Constants::LANGUAGE_MAP.keys.index_with { |data_path| SchaleDB::V1::Data.students(data_path) }
-
-    raw_students_by_data_path.fetch("kr").each do |uid, row|
-      student = find_or_initialize_by(uid: uid)
-      update_student_attributes(student, row)
-      sync_skill_materials(student, row, existing_item_uids)
-      sync_name_translations(student, raw_students_by_data_path, uid)
-      log_and_sync_images_if_updated(student)
-    end
-
-    nil
-  end
+    grouped_students.or(legacy_students)
+  }
 
   def self.find_by_uid(uid)
     Rails.cache.fetch(cache_key(uid), expires_in: 1.minute) do
@@ -75,7 +34,12 @@ class Student < ApplicationRecord
   end
 
   def self.multiclass_students
-    self.where("multiclass_uid is not null")
+    multiclass_variant_uids = where.not(student_variant_uid: nil)
+      .group(:student_variant_uid)
+      .having("COUNT(*) > 1")
+      .select(:student_variant_uid)
+
+    where(student_variant_uid: multiclass_variant_uids)
   end
 
   def self.sync_recruitment_dates!(uids)
@@ -94,6 +58,14 @@ class Student < ApplicationRecord
     self.release_at.present? && self.release_at < Time.zone.now
   end
 
+  def character
+    StudentCharacter.new(uid: character_group_uid)
+  end
+
+  def student_variant
+    StudentVariant.new(uid: student_variant_uid)
+  end
+
   def equipments
     super&.split(",") || []
   end
@@ -106,84 +78,29 @@ class Student < ApplicationRecord
     "#{BAQL_ID_PREFIX}#{uid}"
   end
 
-  def sync_images!
-    self.class.sync_image!(
-      self.class.image_storage_key("students", "standing", "#{uid}.webp"),
-      SchaleDB::V1::Images.student_standing(uid),
-    )
-    self.class.sync_image!(
-      self.class.image_storage_key("students", "collection", "#{uid}.webp"),
-      SchaleDB::V1::Images.student_collection(uid),
-    )
-    nil
-  end
-
   def skills(skill_type: nil)
-    skills = SKILL_TYPES.filter_map do |raw_skill_type, normalized_skill_type|
-      name = raw_data.dig("Skills", raw_skill_type, "Name")
-      next if name.blank?
-
-      Skill.new(skill_type: normalized_skill_type, name: name)
-    end
-
-    return skills unless skill_type.present?
-
-    skills.select { |skill| skill.skill_type == skill_type }
+    records = student_skills
+    records = records.where(skill_type: skill_type) if skill_type.present?
+    records.to_a.sort_by { |skill| [StudentSkill::TYPE_ORDER.fetch(skill.skill_type), skill.uid] }
   end
 
   def gear
-    gear_data = raw_data&.dig("Gear")
-    return nil if gear_data.blank? || gear_data["Name"].blank?
+    return nil if gear_name.blank?
 
-    materials = Array(gear_data["TierUpMaterial"])
-    amounts = Array(gear_data["TierUpMaterialAmount"])
-    item_uids = materials.flatten.map(&:to_s).uniq
-    items_by_uid = Item.where(uid: item_uids).index_by(&:uid)
+    growth_items = student_gear_growth_items.includes(:item).filter_map do |growth_item|
+      next unless growth_item.item
 
-    growth_items = materials.each_with_index.flat_map do |tier_item_uids, index|
-      tier_amounts = Array(amounts[index])
+      GearGrowthItem.new(
+        gear_tier: growth_item.gear_tier,
+        item: growth_item.item,
+        amount: growth_item.amount,
+      )
+    end
 
-      Array(tier_item_uids).map.with_index do |item_uid, item_index|
-        item = items_by_uid[item_uid.to_s]
-        amount = tier_amounts[item_index]
-        next unless item && amount
-
-        GearGrowthItem.new(gear_tier: index + 2, item: item, amount: amount)
-      end
-    end.compact
-
-    Gear.new(name: gear_data["Name"], growth_items: growth_items)
+    Gear.new(name: gear_name, growth_items: growth_items)
   end
 
   private
-
-  def self.update_student_attributes(student, row)
-    student.update!(
-      name:          row["Name"],
-      school:        row["School"].downcase.gsub(/^etc$/, "others"),
-      initial_tier:  row["StarGrade"],
-      attack_type:   SchaleDBMap::ATTACK_TYPES[row["BulletType"]],
-      defense_type:  SchaleDBMap::DEFENSE_TYPES[row["ArmorType"]],
-      role:          row["SquadType"] == "Main" ? "striker" : "special",
-      position:      SchaleDBMap::POSITIONS[row["Position"]],
-      tactic_role:   SchaleDBMap::TACTIC_ROLES[row["TacticRole"]],
-      birthday:      parse_birthday(row["Birthday"]),
-      alt_names:     Array(row["SearchTags"]),
-      family_name:   row["FamilyName"],
-      personal_name: row["PersonalName"],
-      equipments:    row["Equipment"].map(&:downcase).join(","),
-      order:         row["DefaultOrder"],
-      schale_db_id:  row["PathName"],
-      raw_data:      row,
-    )
-  end
-
-  def self.sync_name_translations(student, raw_students_by_data_path, uid)
-    Constants::LANGUAGE_MAP.each do |data_path, lang|
-      name = raw_students_by_data_path.dig(data_path, uid, "Name")
-      student.set_name(name, lang) if name.present?
-    end
-  end
 
   def self.recruitments_for_student(uid)
     Recruitment
@@ -202,47 +119,6 @@ class Student < ApplicationRecord
       .where(recruitment_type: Recruitment::ARCHIVE_RECRUITMENT_TYPES)
       .reorder("recruitment_groups.start_at ASC", "recruitment_groups.uid ASC")
       .pick("recruitment_groups.start_at")
-  end
-
-  def self.parse_birthday(birthday_str)
-    match = birthday_str&.match(/(\d+)월\s*(\d+)일/)
-    return nil unless match
-
-    month = match[1].to_i
-    day = match[2].to_i
-
-    Date.new(0, month, day)
-  rescue ArgumentError
-    nil
-  end
-
-  def self.sync_skill_materials(student, row, existing_item_uids)
-    sync_skill_material_type(student, row["SkillExMaterial"], row["SkillExMaterialAmount"], "ex", existing_item_uids)
-    sync_skill_material_type(student, row["SkillMaterial"], row["SkillMaterialAmount"], "normal", existing_item_uids)
-  end
-
-  def self.sync_skill_material_type(student, materials, amounts, skill_type, existing_item_uids)
-    materials.each_with_index do |item_uids, index|
-      level = index + 2
-      item_uids.each_with_index do |item_uid, item_index|
-        item_uid_str = item_uid.to_s
-        next unless existing_item_uids.include?(item_uid_str)
-
-        StudentSkillItem.find_or_initialize_by(
-          student_uid: student.uid, 
-          item_uid: item_uid_str, 
-          skill_type: skill_type, 
-          skill_level: level
-        ).update!(amount: amounts[index][item_index])
-      end
-    end
-  end
-
-  def self.log_and_sync_images_if_updated(student)
-    return unless student.saved_changes?
-
-    Rails.logger.info("Student #{student.read_attribute(:name)}(#{student.uid}) has been updated")
-    student.sync_images!
   end
 
   def self.cache_key(uid)

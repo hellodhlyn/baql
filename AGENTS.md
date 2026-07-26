@@ -1,6 +1,6 @@
 # BAQL — Model & Architecture Reference
 
-> GraphQL API for Blue Archive. Fetches game data from SchaleDB (schaledb.com) and serves it via GraphQL.
+> GraphQL API for Blue Archive. Serves data from private BAQL Sync snapshots and the remaining SchaleDB-backed domains.
 > Used by [mollulog.net](https://mollulog.net)
 
 ## Tech Stack
@@ -12,7 +12,7 @@
 | API | GraphQL (`graphql` gem) |
 | DB | PostgreSQL |
 | Storage | AWS S3 (images) |
-| Data Source | SchaleDB (`lib/schale_db/v1/data.rb`) |
+| Data Source | BAQL Sync snapshots + SchaleDB (`lib/schale_db/v1/data.rb`) |
 
 ---
 
@@ -25,8 +25,9 @@
 uid, baql_id, rarity, raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/currencies/:uid`
-- `sync!`: SchaleDB currencies API → DB upsert + Translation upsert
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/currencies/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::currencies::{uid}`
 
 #### `Item` — `items` table
@@ -34,9 +35,10 @@ uid, baql_id, rarity, raw_data(jsonb)
 uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/items/:uid`
-- `sync!`: SchaleDB items API → DB upsert + Translation upsert
-- `duplicate!(new_uid)`: duplicates the item including its image
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/items/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
+- `duplicate!(new_uid)`: legacy rerun compatibility; duplicates item data and translations only
 - `baql_id` format: `baql::items::{uid}`
 
 #### `Equipment` — `equipments` table
@@ -44,7 +46,9 @@ uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/equipments/:uid`
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/equipments/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::equipments::{uid}`
 
 #### `Furniture` — `furnitures` table
@@ -52,7 +56,9 @@ uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 uid, baql_id, category, sub_category, rarity, tags(string[]), raw_data(jsonb)
 ```
 - `Translatable`: `name`, `description`
-- `ImageSyncable`: stores to S3 at `assets/images/furnitures/:uid`
+- imported from the private `baql-sync` resource snapshot
+- images are extracted and uploaded by BAQL Sync at `images/resources/furnitures/:uid.webp`
+- Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::furnitures::{uid}`
 
 ---
@@ -133,10 +139,11 @@ uid, name, school, initial_tier, attack_type, defense_type, role, tactic_role,
 position, birthday, equipments(comma-separated string), order, schale_db_id,
 multiclass_uid, release_at, alt_names(string[])
 ```
-- `ImageSyncable`: standing + collection images
+- standing + collection images are extracted and uploaded by the private `baql-sync` pipeline
 - `released`: true when `release_at < now`
-- `sync!`: syncs from SchaleDB students, populates skill materials
+- imported from the private `baql-sync` full snapshot; BAQL does not fetch SchaleDB student data
 - `multiclass_uid`: references the original student uid for multiclass variants
+- `schale_db_id`: preserved nullable legacy identifier; not owned by the importer
 - Cache: `Rails.cache` per uid, 1-minute TTL
 
 #### `StudentSkillItem` — `student_skill_items` table
@@ -149,7 +156,7 @@ student_uid, item_uid, skill_type(ex/normal), skill_level(int), amount
 ```
 student_uid, item_uid, exp, favorite_level, favorited(bool)
 ```
-- `sync!`: computed from SchaleDB items (`Category == "Favor"`) + student `FavorItemTags`
+- replaced transactionally from the private `baql-sync` full snapshot
 
 ---
 
@@ -328,9 +335,8 @@ https://schaledb.com/data/{lang}/{dataset}.min.json
 
 ### Rake Tasks
 ```bash
-rails sync:all          # students + items + furnitures + equipments + currencies
-rails sync:students
-rails sync:items        # Item.sync! + StudentFavoriteItem.sync!
+rails sync:all          # non-student SchaleDB-backed datasets
+rails sync:items        # Item.sync! only; student favorite data comes from baql-sync
 rails sync:furnitures
 rails sync:equipments
 rails sync:currencies

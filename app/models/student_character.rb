@@ -1,0 +1,1 @@
+StudentCharacter = Data.define(:uid)

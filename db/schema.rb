@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_26_003000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,7 +30,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.string "baql_id", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", null: false
+    t.jsonb "raw_data"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_currencies_on_uid", unique: true
@@ -56,7 +56,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.string "category", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", null: false
+    t.jsonb "raw_data"
     t.string "sub_category"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
@@ -150,7 +150,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.string "category", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", null: false
+    t.jsonb "raw_data"
     t.string "sub_category"
     t.string "tags", default: [], null: false, array: true
     t.string "uid", null: false
@@ -172,7 +172,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.string "category", null: false
     t.datetime "created_at", null: false
     t.integer "rarity", null: false
-    t.jsonb "raw_data", default: {}, null: false
+    t.jsonb "raw_data"
     t.string "sub_category"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
@@ -385,6 +385,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.index ["uid"], name: "index_raids_on_uid", unique: true
   end
 
+  create_table "recruitment_group_contents", force: :cascade do |t|
+    t.string "content_run_type"
+    t.string "content_type", null: false
+    t.string "content_uid", null: false
+    t.datetime "created_at", null: false
+    t.string "recruitment_group_uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["content_type", "content_uid", "content_run_type"], name: "idx_rg_contents_on_content"
+    t.index ["recruitment_group_uid", "content_type", "content_uid", "content_run_type"], name: "idx_rg_contents_unique_with_run_type", unique: true, where: "(content_run_type IS NOT NULL)"
+    t.index ["recruitment_group_uid", "content_type", "content_uid"], name: "idx_rg_contents_unique_without_run_type", unique: true, where: "(content_run_type IS NULL)"
+    t.index ["recruitment_group_uid"], name: "index_recruitment_group_contents_on_recruitment_group_uid"
+  end
+
   create_table "recruitment_groups", force: :cascade do |t|
     t.string "baql_id", null: false
     t.string "content_type"
@@ -444,6 +457,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.index ["uid"], name: "index_stages_on_uid", unique: true
   end
 
+  create_table "student_catalogs", force: :cascade do |t|
+    t.string "assets_version"
+    t.string "client_version"
+    t.datetime "created_at", null: false
+    t.jsonb "data", default: {}, null: false
+    t.string "database_sha256", null: false
+    t.string "region", null: false
+    t.datetime "updated_at", null: false
+    t.string "version", null: false
+    t.index ["region"], name: "index_student_catalogs_on_region", unique: true
+    t.index ["version"], name: "index_student_catalogs_on_version"
+  end
+
   create_table "student_favorite_items", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "exp", null: false
@@ -454,6 +480,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.datetime "updated_at", null: false
     t.index ["item_uid"], name: "index_student_favorite_items_on_item_uid"
     t.index ["student_uid"], name: "index_student_favorite_items_on_student_uid"
+  end
+
+  create_table "student_gear_growth_items", force: :cascade do |t|
+    t.integer "amount", null: false
+    t.datetime "created_at", null: false
+    t.integer "gear_tier", null: false
+    t.string "item_uid", null: false
+    t.string "student_uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["item_uid"], name: "index_student_gear_growth_items_on_item_uid"
+    t.index ["student_uid", "gear_tier", "item_uid"], name: "idx_on_student_uid_gear_tier_item_uid_0169390a0c", unique: true
   end
 
   create_table "student_skill_items", force: :cascade do |t|
@@ -468,15 +505,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.index ["student_uid"], name: "index_student_skill_items_on_student_uid"
   end
 
+  create_table "student_skills", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "icon_asset_key"
+    t.jsonb "levels", default: [], null: false
+    t.jsonb "links", default: {}, null: false
+    t.jsonb "localizations", default: {}, null: false
+    t.string "name", null: false
+    t.string "skill_type", null: false
+    t.string "student_uid", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["student_uid", "skill_type"], name: "index_student_skills_on_student_uid_and_skill_type"
+    t.index ["student_uid", "uid"], name: "index_student_skills_on_student_uid_and_uid", unique: true
+  end
+
   create_table "students", force: :cascade do |t|
     t.string "alt_names", default: [], array: true
     t.datetime "archive_at"
     t.string "attack_type", null: false
     t.date "birthday"
+    t.jsonb "catalog_data", default: {}, null: false
+    t.string "character_group_uid"
     t.datetime "created_at", null: false
     t.string "defense_type", null: false
     t.string "equipments"
     t.string "family_name"
+    t.string "gear_name"
     t.integer "initial_tier", null: false
     t.string "multiclass_uid"
     t.string "name", null: false
@@ -488,9 +543,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000000) do
     t.string "role", null: false
     t.string "schale_db_id"
     t.string "school", null: false
+    t.string "student_variant_uid"
     t.string "tactic_role"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
+    t.index ["character_group_uid"], name: "index_students_on_character_group_uid"
+    t.index ["student_variant_uid"], name: "index_students_on_student_variant_uid"
     t.index ["uid"], name: "index_students_on_uid", unique: true
   end
 

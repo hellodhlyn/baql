@@ -50,4 +50,23 @@ RSpec.describe "GraphQL schema", type: :graphql do
 
     expect(payment_range_type.fields).to include("quantityVariable")
   end
+
+  it "exposes student characters and variants" do
+    student_type = BaqlSchema.types["Student"]
+    character_type = BaqlSchema.types["StudentCharacter"]
+    variant_type = BaqlSchema.types["StudentVariant"]
+
+    expect(student_type.fields).to include("character", "studentVariant")
+    expect(character_type.fields).to include("uid", "studentVariants")
+    expect(variant_type.fields).to include("uid", "isMulticlass", "primaryStudent", "students")
+  end
+
+  it "exposes structured skill stat modifiers" do
+    level_type = BaqlSchema.types["StudentSkillLevel"]
+    modifier_type = BaqlSchema.types["StudentSkillStatModifier"]
+
+    expect(level_type.fields.fetch("statModifiers").type.to_type_signature)
+      .to eq("[StudentSkillStatModifier!]!")
+    expect(modifier_type.fields).to include("stat", "kind", "value", "activation", "persistence")
+  end
 end
