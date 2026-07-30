@@ -22,9 +22,13 @@ module Types
     field :position, Types::Enums::PositionType, null: false
     field :birthday, GraphQL::Types::ISO8601Date, null: true
     field :equipments, [String], null: false
-    field :release_at, GraphQL::Types::ISO8601DateTime, null: true
+    field :release_at, GraphQL::Types::ISO8601DateTime, null: true do
+      argument :region, Types::Enums::RegionType, required: false, default_value: "gl"
+    end
     field :archive_at, GraphQL::Types::ISO8601DateTime, null: true
-    field :released, Boolean, null: false
+    field :released, Boolean, null: false do
+      argument :region, Types::Enums::RegionType, required: false, default_value: "gl"
+    end
     field :order, Int, null: false
     field :schale_db_id, String, null: true
     field :catalog, Types::StudentCatalogType::StudentDataType, null: true
@@ -33,6 +37,14 @@ module Types
 
     def catalog
       object.catalog_data.presence
+    end
+
+    def release_at(region:)
+      object.release_at_for(region)
+    end
+
+    def released(region:)
+      object.released_in?(region)
     end
 
     def name(lang:)

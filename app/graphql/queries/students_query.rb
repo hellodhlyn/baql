@@ -6,9 +6,9 @@ module Queries
 
     def resolve(uids: [])
       if uids.present?
-        Student.where(uid: uids)
+        Student.jp_released.where(uid: uids)
       else
-        Student.all_without_multiclass
+        Student.all_without_multiclass.jp_released
       end
     end
   end

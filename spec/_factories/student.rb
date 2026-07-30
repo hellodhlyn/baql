@@ -11,6 +11,7 @@ FactoryBot.define do
     role { "striker" }
     equipments { ["shoes", "hairpin", "necklace"] }
     release_at { nil }
+    jp_release_at { Time.zone.parse("2021-02-14 11:00:00 +09:00") }
     order { 19 }
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_31_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -629,6 +629,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_000000) do
     t.string "family_name"
     t.string "gear_name"
     t.integer "initial_tier", null: false
+    t.datetime "jp_release_at"
     t.string "multiclass_uid"
     t.string "name", null: false
     t.bigint "order", null: false
@@ -644,6 +645,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_000000) do
     t.string "uid", null: false
     t.datetime "updated_at", null: false
     t.index ["character_group_uid"], name: "index_students_on_character_group_uid"
+    t.index ["jp_release_at"], name: "index_students_on_jp_release_at"
     t.index ["student_variant_uid"], name: "index_students_on_student_variant_uid"
     t.index ["uid"], name: "index_students_on_uid", unique: true
   end

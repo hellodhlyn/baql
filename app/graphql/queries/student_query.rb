@@ -1,11 +1,11 @@
 module Queries
   class StudentQuery < Queries::BaseQuery
-    type Types::StudentType, null: false
+    type Types::StudentType, null: true
 
     argument :uid, String, required: true
 
     def resolve(uid: nil)
-      Student.find_by_uid(uid)
+      Student.find_jp_released_by_uid(uid)
     end
   end
 end

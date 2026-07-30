@@ -15,6 +15,8 @@ class Student < ApplicationRecord
 
   after_save :flush_cache
 
+  scope :jp_released, -> { where("jp_release_at < ?", Time.current) }
+
   scope :all_without_multiclass, -> {
     primary_variant_uids = unscoped
       .where.not(student_variant_uid: nil)
@@ -31,6 +33,11 @@ class Student < ApplicationRecord
     Rails.cache.fetch(cache_key(uid), expires_in: 1.minute) do
       self.find_by(uid: uid)
     end
+  end
+
+  def self.find_jp_released_by_uid(uid)
+    student = find_by_uid(uid)
+    student if student&.jp_released
   end
 
   def self.multiclass_students
@@ -55,7 +62,23 @@ class Student < ApplicationRecord
   end
 
   def released
-    self.release_at.present? && self.release_at < Time.zone.now
+    released_in?("gl")
+  end
+
+  def jp_released
+    jp_release_at.present? && jp_release_at < Time.zone.now
+  end
+
+  def release_at_for(region)
+    case region
+    when "gl" then release_at
+    when "jp" then jp_release_at
+    end
+  end
+
+  def released_in?(region)
+    value = release_at_for(region)
+    value.present? && value < Time.zone.now
   end
 
   def character

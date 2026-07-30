@@ -13,18 +13,34 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
       results = subject.resolve(uid: "10098")
       expect(results.uid).to eq("10098")
     end
+
+    it "does not return a student before the JP release time" do
+      student = FactoryBot.create(:student, uid: "jp-unreleased", jp_release_at: 1.day.from_now)
+
+      expect(subject.resolve(uid: student.uid)).to be_nil
+    end
   end
 
   describe "student recruitment date fields" do
-    it "returns releaseAt and archiveAt" do
-      release_at = Time.zone.parse("2026-04-01 02:00:00")
-      archive_at = Time.zone.parse("2026-05-01 02:00:00")
-      student = FactoryBot.create(:student, uid: "student-1", release_at: release_at, archive_at: archive_at)
+    it "returns regional releaseAt/released values and archiveAt" do
+      release_at = Time.zone.parse("2027-04-01 02:00:00")
+      archive_at = Time.zone.parse("2027-05-01 02:00:00")
+      jp_release_at = Time.zone.parse("2025-04-01 02:00:00")
+      student = FactoryBot.create(
+        :student,
+        uid: "student-1",
+        release_at: release_at,
+        jp_release_at: jp_release_at,
+        archive_at: archive_at,
+      )
 
       result = execute_graphql(<<~GRAPHQL, variables: { uid: student.uid })
         query($uid: String!) {
           student(uid: $uid) {
             releaseAt
+            jpReleaseAt: releaseAt(region: jp)
+            glReleased: released
+            jpReleased: released(region: jp)
             archiveAt
           }
         }
@@ -33,6 +49,9 @@ RSpec.describe Queries::StudentQuery, type: :graphql do
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "student")).to eq(
         "releaseAt" => release_at.iso8601,
+        "jpReleaseAt" => jp_release_at.iso8601,
+        "glReleased" => false,
+        "jpReleased" => true,
         "archiveAt" => archive_at.iso8601,
       )
     end

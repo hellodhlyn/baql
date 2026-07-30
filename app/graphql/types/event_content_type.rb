@@ -149,10 +149,24 @@ module Types
     end
   end
 
+  class EventContentBonusStudentType < Types::Base::Object
+    field :uid, String, null: false
+    field :name, String, null: false do
+      argument :lang, Types::Enums::LanguageType, required: false, default_value: Constants::DEFAULT_LANGUAGE
+    end
+    field :role, Types::StudentType::RoleEnum, null: false
+
+    def name(lang:)
+      dataloader
+        .with(Sources::StudentNameByStudent, lang)
+        .load(object)
+    end
+  end
+
   class EventContentBonusType < Types::Base::Object
     include ResourceLookup
 
-    field :student,    Types::StudentType, null: true
+    field :student,    Types::EventContentBonusStudentType, null: true
     field :resource,   Types::ResourceInterface, null: true
     field :percentage, String, null: false
 

@@ -107,6 +107,13 @@ RSpec.describe Queries::StudentsQuery, type: :graphql do
         expect(results.pluck(:uid)).to contain_exactly("10098", "10099")
       end
     end
+
+    it "excludes students whose JP release time has not passed" do
+      hidden = FactoryBot.create(:student, uid: "jp-unreleased", jp_release_at: 1.day.from_now)
+
+      expect(subject.resolve(uids: ["10098", hidden.uid]).pluck(:uid)).to eq(["10098"])
+      expect(subject.resolve.pluck(:uid)).not_to include(hidden.uid)
+    end
   end
 
   describe "student variant fields" do

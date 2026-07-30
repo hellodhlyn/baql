@@ -52,6 +52,26 @@ RSpec.describe Student, type: :model do
     end
   end
 
+  describe "JP release visibility" do
+    it "only includes students whose JP release time has passed" do
+      released = FactoryBot.create(:student, uid: "jp-released", jp_release_at: 1.minute.ago)
+      FactoryBot.create(:student, uid: "jp-unreleased", jp_release_at: 1.minute.from_now)
+      FactoryBot.create(:student, uid: "jp-unknown", jp_release_at: nil)
+
+      expect(described_class.jp_released).to contain_exactly(released)
+      expect(released.jp_released).to eq(true)
+    end
+
+    it "resolves regional release timestamps without changing the legacy GL meaning" do
+      student = FactoryBot.build(:student, release_at: 1.day.from_now, jp_release_at: 1.day.ago)
+
+      expect(student.release_at_for("gl")).to eq(student.release_at)
+      expect(student.release_at_for("jp")).to eq(student.jp_release_at)
+      expect(student.released_in?("gl")).to eq(false)
+      expect(student.released_in?("jp")).to eq(true)
+    end
+  end
+
   describe ".sync_recruitment_dates!" do
     let!(:student) { FactoryBot.create(:student, uid: "student-1", release_at: nil) }
     let!(:later_group) { FactoryBot.create(:recruitment_group, uid: "later", start_at: Time.zone.parse("2026-04-10 02:00:00")) }
