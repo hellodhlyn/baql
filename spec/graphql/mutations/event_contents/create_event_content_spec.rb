@@ -22,14 +22,6 @@ RSpec.describe Mutations::EventContents::CreateEventContent, type: :graphql do
     expect(EventContent.find_by(uid: "99999")).to be_present
   end
 
-  it "returns an error when raw_data is an array" do
-    result = execute_graphql_as_admin(mutation, variables: {
-      input: { uid: "99999", rawDataFirst: [1, 2, 3] },
-    })
-    expect(result["errors"]).to be_present
-    expect(result["errors"].first["message"]).to include("must be a JSON object")
-  end
-
   it "returns an error when uid is duplicated" do
     FactoryBot.create(:event_content, uid: "99999")
     result = execute_graphql_as_admin(mutation, variables: { input: { uid: "99999" } })

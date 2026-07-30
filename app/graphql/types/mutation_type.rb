@@ -12,7 +12,6 @@ module Types
 
     # EventContent
     field :create_event_content, mutation: Mutations::EventContents::CreateEventContent
-    field :update_event_content, mutation: Mutations::EventContents::UpdateEventContent
 
     # EventContentSchedule
     field :upsert_event_content_schedule, mutation: Mutations::EventContentSchedules::UpsertEventContentSchedule

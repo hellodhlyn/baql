@@ -14,32 +14,32 @@ RSpec.describe "EventContent shop resources", type: :graphql do
   end
 
   let!(:event_content) do
-    FactoryBot.create(
-      :event_content,
-      uid: "854",
-      raw_data_first: {
-        "shop" => {
-          "13" => [
-            {
-              "Id" => 8540000,
-              "PurchaseCountLimit" => 60,
-              "Goods" => [
-                {
-                  "ParcelId" => [19],
-                  "ParcelAmount" => [1],
-                  "ParcelTypeStr" => ["Currency"],
-                  "ConsumeParcelId" => [4],
-                  "ConsumeParcelAmount" => [5],
-                  "ConsumeParcelTypeStr" => ["Currency"],
-                  "ConsumeExtraAmount" => [5, 10, 15, 25, 35, 45],
-                  "ConsumeExtraStep" => [10, 10, 10, 10, 10, 10],
-                }
-              ],
-            }
-          ],
-        },
-      },
-    )
+    FactoryBot.create(:event_content, uid: "854").tap do |event|
+      run = EventContentRun.create!(event_content_uid: event.uid, run_type: "first", source_event_content_uid: 854, position: 0)
+      shop = EventContentRunShopResource.create!(
+        event_content_run: run,
+        uid: "8540000",
+        resource_type: "currency",
+        resource_uid: "19",
+        resource_amount: 1,
+        payment_resource_type: "currency",
+        payment_resource_uid: "4",
+        payment_resource_amount: 5,
+        shop_amount: 60,
+        position: 0,
+      )
+      [5, 10, 15, 25, 35, 45].each_with_index do |price, index|
+        EventContentRunShopPurchaseTier.create!(
+          event_content_run_shop_resource: shop,
+          tier_index: index,
+          start_quantity: index * 10 + 1,
+          quantity: 10,
+          unit_price: price,
+          payment_resource_type: "currency",
+          payment_resource_uid: "4",
+        )
+      end
+    end
   end
 
   let(:query) do

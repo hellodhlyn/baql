@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_26_004000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,6 +61,101 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_26_004000) do
     t.string "uid", null: false
     t.datetime "updated_at", null: false
     t.index ["uid"], name: "index_equipments_on_uid", unique: true
+  end
+
+  create_table "event_content_run_bonuses", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "event_content_run_id", null: false
+    t.decimal "percentage", precision: 10, scale: 4, null: false
+    t.integer "position", null: false
+    t.string "reward_type", null: false
+    t.string "reward_uid", null: false
+    t.string "student_uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_run_id", "student_uid", "reward_type", "reward_uid"], name: "idx_event_run_bonuses_unique", unique: true
+    t.index ["reward_type", "reward_uid"], name: "index_event_content_run_bonuses_on_reward_type_and_reward_uid"
+    t.index ["student_uid"], name: "index_event_content_run_bonuses_on_student_uid"
+  end
+
+  create_table "event_content_run_minigames", force: :cascade do |t|
+    t.jsonb "config", null: false
+    t.datetime "created_at", null: false
+    t.bigint "event_content_run_id", null: false
+    t.string "minigame_type", null: false
+    t.integer "position", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_run_id", "minigame_type"], name: "idx_event_run_minigames_unique", unique: true
+  end
+
+  create_table "event_content_run_shop_purchase_tiers", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "event_content_run_shop_resource_id", null: false
+    t.string "payment_resource_type", null: false
+    t.string "payment_resource_uid", null: false
+    t.integer "quantity"
+    t.integer "start_quantity", null: false
+    t.integer "tier_index", null: false
+    t.integer "unit_price", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_run_shop_resource_id", "tier_index"], name: "idx_event_run_shop_tiers_unique", unique: true
+  end
+
+  create_table "event_content_run_shop_resources", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "event_content_run_id", null: false
+    t.integer "payment_resource_amount", null: false
+    t.string "payment_resource_type", null: false
+    t.string "payment_resource_uid", null: false
+    t.integer "position", null: false
+    t.integer "resource_amount", null: false
+    t.string "resource_type", null: false
+    t.string "resource_uid", null: false
+    t.integer "shop_amount"
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_run_id", "uid"], name: "idx_event_run_shop_resources_unique", unique: true
+    t.index ["payment_resource_type", "payment_resource_uid"], name: "idx_event_run_shop_payment_resource"
+    t.index ["resource_type", "resource_uid"], name: "idx_on_resource_type_resource_uid_60b837f229"
+  end
+
+  create_table "event_content_run_stage_rewards", force: :cascade do |t|
+    t.integer "amount", null: false
+    t.datetime "created_at", null: false
+    t.bigint "event_content_run_stage_id", null: false
+    t.integer "position", null: false
+    t.decimal "probability", precision: 10, scale: 4, null: false
+    t.string "reward_type", null: false
+    t.string "reward_uid", null: false
+    t.string "tag", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_run_stage_id", "position"], name: "idx_on_event_content_run_stage_id_position_c8c204a050", unique: true
+    t.index ["reward_type", "reward_uid"], name: "idx_on_reward_type_reward_uid_2ba643203a"
+  end
+
+  create_table "event_content_run_stages", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "enter_cost_amount", null: false
+    t.string "enter_cost_type", null: false
+    t.string "enter_cost_uid", null: false
+    t.bigint "event_content_run_id", null: false
+    t.integer "position", null: false
+    t.integer "stage_index", null: false
+    t.string "stage_number", null: false
+    t.string "stage_type", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["enter_cost_type", "enter_cost_uid"], name: "idx_on_enter_cost_type_enter_cost_uid_0e7637a5d6"
+    t.index ["event_content_run_id", "uid"], name: "index_event_content_run_stages_on_event_content_run_id_and_uid", unique: true
+  end
+
+  create_table "event_content_runs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "event_content_uid", null: false
+    t.integer "position", null: false
+    t.string "run_type", null: false
+    t.bigint "source_event_content_uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_content_uid", "run_type"], name: "index_event_content_runs_on_event_content_uid_and_run_type", unique: true
   end
 
   create_table "event_content_schedules", force: :cascade do |t|

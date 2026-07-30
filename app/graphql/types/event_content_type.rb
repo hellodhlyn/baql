@@ -181,18 +181,6 @@ module Types
     field :uid,  String, null: false
     field :name, String, null: false
     field :schedules, [Types::EventContentScheduleType], null: false
-    field :raw_data_first, GraphQL::Types::JSON, null: true
-    field :raw_data_rerun, GraphQL::Types::JSON, null: true
-
-    def raw_data_first
-      authorize_admin!
-      object.raw_data_first
-    end
-
-    def raw_data_rerun
-      authorize_admin!
-      object.raw_data_rerun
-    end
 
     def name
       dataloader
@@ -206,40 +194,40 @@ module Types
         .load(object.uid)
     end
 
-    private
-
-    def authorize_admin!
-      unless context[:admin]
-        raise GraphQL::ExecutionError, "Authentication required to access raw data."
-      end
-    end
-
     field :stages, [Types::EventContentStageType], null: false do
       argument :run_type, RunTypeEnum, required: true
     end
     def stages(run_type:)
-      object.stages(run_type: run_type)
+      load_run(run_type).then { |run| run&.stages_payload || [] }
     end
 
     field :bonuses, [Types::EventContentBonusType], null: false do
       argument :run_type, RunTypeEnum, required: true
     end
     def bonuses(run_type:)
-      object.bonuses(run_type: run_type)
+      load_run(run_type).then { |run| run&.bonuses_payload || [] }
     end
 
     field :shop_resources, [Types::EventContentShopResourceType], null: false do
       argument :run_type, RunTypeEnum, required: true
     end
     def shop_resources(run_type:)
-      object.shop_resources(run_type: run_type)
+      load_run(run_type).then { |run| run&.shop_resources_payload || [] }
     end
 
     field :minigame_configs, [Types::EventMinigameConfigType], null: false do
       argument :run_type, RunTypeEnum, required: true
     end
     def minigame_configs(run_type:)
-      object.minigame_configs(run_type: run_type)
+      load_run(run_type).then { |run| run&.minigame_configs_payload || [] }
+    end
+
+    private
+
+    def load_run(run_type)
+      dataloader
+        .with(Sources::EventContentRunsByEventUid, run_type)
+        .load(object.uid)
     end
   end
 end

@@ -1,491 +1,79 @@
 require "rails_helper"
 
 RSpec.describe EventContent, type: :model do
-  describe ".sync_event_logos!" do
-    it "syncs event logos to the normalized image storage path" do
-      event_content = FactoryBot.build(:event_content, uid: "123")
-
-      allow(SchaleDB::V1::Images).to receive(:event_logo).with("123", "Jp").and_return("jp-image")
-      allow(SchaleDB::V1::Images).to receive(:event_logo).with("123", "Kr").and_return("kr-image")
-      allow(EventContent).to receive(:sync_image!)
-
-      EventContent.sync_event_logos!(event_content)
-
-      expect(EventContent).to have_received(:sync_image!).with("images/events/logo/123_jp.webp", "jp-image")
-      expect(EventContent).to have_received(:sync_image!).with("images/events/logo/123_kr.webp", "kr-image")
-    end
-
-    it "skips locales whose event logo image does not exist" do
-      event_content = FactoryBot.build(:event_content, uid: "857")
-
-      allow(SchaleDB::V1::Images).to receive(:event_logo).with("857", "Jp").and_return("jp-image")
-      allow(SchaleDB::V1::Images).to receive(:event_logo).with("857", "Kr").and_return(nil)
-      allow(EventContent).to receive(:sync_image!)
-
-      EventContent.sync_event_logos!(event_content)
-
-      expect(EventContent).to have_received(:sync_image!).with("images/events/logo/857_jp.webp", "jp-image")
-      expect(EventContent).not_to have_received(:sync_image!).with("images/events/logo/857_kr.webp", anything)
-    end
-  end
-
-  describe "rerun item duplication" do
-    let(:first_raw) do
-      {
-        "currency" => [
-          { "EventContentItemType" => 0, "ItemUniqueId" => 80540 },
-          { "EventContentItemType" => 1, "ItemUniqueId" => 80541 },
-          { "EventContentItemType" => 2, "ItemUniqueId" => 80542 },
-        ]
-      }
-    end
-
-    let(:rerun_raw) do
-      {
-        "currency" => [
-          { "EventContentItemType" => 0, "ItemUniqueId" => 85380 },
-          { "EventContentItemType" => 1, "ItemUniqueId" => 85381 },
-          { "EventContentItemType" => 2, "ItemUniqueId" => 85382 },
-        ]
-      }
-    end
-
-    before do
-      FactoryBot.create(:item, uid: "80540", baql_id: "baql::items::80540", category: "coin", rarity: 1, raw_data: { "Id" => 80540 }, name: "이벤트 포인트")
-      FactoryBot.create(:item, uid: "80541", baql_id: "baql::items::80541", category: "coin", rarity: 1, raw_data: { "Id" => 80541 }, name: "엑스포 기념품")
-      FactoryBot.create(:item, uid: "80542", baql_id: "baql::items::80542", category: "coin", rarity: 1, raw_data: { "Id" => 80542 }, name: "누군가의 분실물")
-
-    end
-
-    it "duplicates first-run event items when raw_data_rerun is first populated" do
-      event_content = FactoryBot.create(:event_content, uid: "843", raw_data_first: first_raw)
-
-      expect {
-        event_content.update!(raw_data_rerun: rerun_raw)
-      }.to change { Item.where(uid: %w[85380 85381 85382]).count }.from(0).to(3)
-
-      expect(Item.find_by!(uid: "85380").name).to eq("이벤트 포인트")
-      expect(Item.find_by!(uid: "85381").name).to eq("엑스포 기념품")
-      expect(Item.find_by!(uid: "85382").name).to eq("누군가의 분실물")
-
-    end
-
-    it "does not duplicate again once raw_data_rerun was already present" do
-      event_content = FactoryBot.create(:event_content, uid: "843", raw_data_first: first_raw)
-      event_content.update!(raw_data_rerun: rerun_raw)
-
-      expect {
-        event_content.update!(raw_data_rerun: rerun_raw.merge("shop" => {}))
-      }.not_to change { Item.where(uid: %w[85380 85381 85382]).count }
-    end
-  end
-
-  # ──────────────────────────────────────────────────────────────
-  # #shop_resources
-  # ──────────────────────────────────────────────────────────────
-  describe "#shop_resources" do
-    let(:shop_item_item) do
-      {
-        "CategoryType" => 13,
-        "Id"           => 8500000,
-        "IsLegacy"     => false,
-        "PurchaseCountLimit" => 90,
-        "GoodsId" => [44500],
-        "Goods" => [
-          {
-            "ParcelId"              => [10],
-            "ParcelAmount"          => [3],
-            "ParcelTypeStr"         => ["Item"],
-            "ConsumeParcelId"       => [80681],
-            "ConsumeParcelAmount"   => [1],
-            "ConsumeParcelTypeStr"  => ["Item"],
-          }
-        ]
-      }
-    end
-
-    let(:shop_item_equipment) do
-      {
-        "CategoryType" => 14,
-        "Id"           => 8500100,
-        "IsLegacy"     => false,
-        "PurchaseCountLimit" => 0,
-        "GoodsId" => [44600],
-        "Goods" => [
-          {
-            "ParcelId"              => [1],
-            "ParcelAmount"          => [1],
-            "ParcelTypeStr"         => ["Equipment"],
-            "ConsumeParcelId"       => [80682],
-            "ConsumeParcelAmount"   => [5],
-            "ConsumeParcelTypeStr"  => ["Item"],
-          }
-        ]
-      }
-    end
-
-    let(:shop_item_furniture) do
-      {
-        "CategoryType" => 13,
-        "Id"           => 8500200,
-        "IsLegacy"     => false,
-        "PurchaseCountLimit" => 1,
-        "GoodsId" => [44700],
-        "Goods" => [
-          {
-            "ParcelId"              => [210381],
-            "ParcelAmount"          => [1],
-            "ParcelTypeStr"         => ["Furniture"],
-            "ConsumeParcelId"       => [80681],
-            "ConsumeParcelAmount"   => [80],
-            "ConsumeParcelTypeStr"  => ["Item"],
-          }
-        ]
-      }
-    end
-
-    let(:raw_data) do
-      {
-        "shop" => {
-          "13" => [shop_item_item, shop_item_furniture],
-          "14" => [shop_item_equipment],
-        }
-      }
-    end
-
-    subject(:event_content) { EventContent.new(uid: "850", baql_id: "baql::events::850", raw_data_first: raw_data) }
-
-    context "when raw_data_first is nil" do
-      subject { EventContent.new(uid: "850", baql_id: "baql::events::850") }
-
-      it "returns an empty array" do
-        expect(subject.shop_resources).to eq([])
-      end
-    end
-
-    context "when the shop key is absent" do
-      subject { EventContent.new(uid: "850", baql_id: "baql::events::850", raw_data_first: {}) }
-
-      it "returns an empty array" do
-        expect(subject.shop_resources).to eq([])
-      end
-    end
-
-    context "when run_type is the default (first)" do
-      it "parses raw_data_first" do
-        expect(event_content.shop_resources.count).to eq(3)
-      end
-    end
-
-    context "when run_type is 'rerun'" do
-      let(:rerun_raw) { { "shop" => { "13" => [shop_item_item] } } }
-      subject { EventContent.new(uid: "850", baql_id: "baql::events::850", raw_data_first: raw_data, raw_data_rerun: rerun_raw) }
-
-      it "parses raw_data_rerun" do
-        expect(subject.shop_resources(run_type: "rerun").count).to eq(1)
-      end
-    end
-
-    describe "field mapping" do
-      it "normalizes all fields correctly" do
-        item = event_content.shop_resources.find { |r| r["uid"] == "8500000" }
-
-        expect(item["uid"]).to eq("8500000")
-        expect(item["resource_type"]).to eq("item")
-        expect(item["resource_uid"]).to eq("10")
-        expect(item["resource_amount"]).to eq(3)
-        expect(item["payment_resource_type"]).to eq("item")
-        expect(item["payment_resource_uid"]).to eq("80681")
-        expect(item["payment_resource_amount"]).to eq(1)
-        expect(item["purchase_tiers"]).to eq([
-          {
-            "tier_index" => 0,
-            "start_quantity" => 1,
-            "quantity" => 90,
-            "unit_price" => 1,
-            "payment_resource_type" => "item",
-            "payment_resource_uid" => "80681",
-          }
-        ])
-      end
-    end
-
-    describe "purchase_tiers" do
-      let(:tiered_ticket_item) do
-        {
-          "CategoryType" => 13,
-          "Id" => 8540000,
-          "PurchaseCountLimit" => 60,
-          "Goods" => [
-            {
-              "ParcelId" => [19],
-              "ParcelAmount" => [1],
-              "ParcelTypeStr" => ["Currency"],
-              "ConsumeParcelId" => [4],
-              "ConsumeParcelAmount" => [5],
-              "ConsumeParcelTypeStr" => ["Currency"],
-              "ConsumeExtraAmount" => [5, 10, 15, 25, 35, 45],
-              "ConsumeExtraStep" => [10, 10, 10, 10, 10, 10],
-            }
-          ]
-        }
-      end
-
-      let(:raw_data) { { "shop" => { "13" => [tiered_ticket_item] } } }
-
-      it "normalizes extra consume steps as purchase tiers" do
-        item = event_content.shop_resources.first
-
-        expect(item["payment_resource_amount"]).to eq(5)
-        expect(item["purchase_tiers"]).to eq([
-          {
-            "tier_index" => 0,
-            "start_quantity" => 1,
-            "quantity" => 10,
-            "unit_price" => 5,
-            "payment_resource_type" => "currency",
-            "payment_resource_uid" => "4",
-          },
-          {
-            "tier_index" => 1,
-            "start_quantity" => 11,
-            "quantity" => 10,
-            "unit_price" => 10,
-            "payment_resource_type" => "currency",
-            "payment_resource_uid" => "4",
-          },
-          {
-            "tier_index" => 2,
-            "start_quantity" => 21,
-            "quantity" => 10,
-            "unit_price" => 15,
-            "payment_resource_type" => "currency",
-            "payment_resource_uid" => "4",
-          },
-          {
-            "tier_index" => 3,
-            "start_quantity" => 31,
-            "quantity" => 10,
-            "unit_price" => 25,
-            "payment_resource_type" => "currency",
-            "payment_resource_uid" => "4",
-          },
-          {
-            "tier_index" => 4,
-            "start_quantity" => 41,
-            "quantity" => 10,
-            "unit_price" => 35,
-            "payment_resource_type" => "currency",
-            "payment_resource_uid" => "4",
-          },
-          {
-            "tier_index" => 5,
-            "start_quantity" => 51,
-            "quantity" => 10,
-            "unit_price" => 45,
-            "payment_resource_type" => "currency",
-            "payment_resource_uid" => "4",
-          },
-        ])
-      end
-    end
-
-    describe "shop_amount" do
-      it "returns the limit when PurchaseCountLimit > 0" do
-        item = event_content.shop_resources.find { |r| r["uid"] == "8500000" }
-        expect(item["shop_amount"]).to eq(90)
-      end
-
-      it "returns nil when PurchaseCountLimit is 0 (unlimited)" do
-        item = event_content.shop_resources.find { |r| r["uid"] == "8500100" }
-        expect(item["shop_amount"]).to be_nil
-      end
-    end
-
-    describe "resource_type variety" do
-      it "parses Equipment type correctly" do
-        item = event_content.shop_resources.find { |r| r["uid"] == "8500100" }
-        expect(item["resource_type"]).to eq("equipment")
-        expect(item["resource_uid"]).to eq("1")
-      end
-
-      it "parses Furniture type correctly" do
-        item = event_content.shop_resources.find { |r| r["uid"] == "8500200" }
-        expect(item["resource_type"]).to eq("furniture")
-        expect(item["resource_uid"]).to eq("210381")
-      end
-    end
-
-    it "flattens items from all categories into a single array" do
-      uids = event_content.shop_resources.map { |r| r["uid"] }
-      expect(uids).to contain_exactly("8500000", "8500100", "8500200")
-    end
-
-    context "when an item has no Goods" do
-      let(:raw_data) do
-        {
-          "shop" => {
-            "13" => [
-              shop_item_item,
-              { "Id" => 9999999, "PurchaseCountLimit" => 1, "Goods" => [] }
-            ]
-          }
-        }
-      end
-
-      it "skips the item with no Goods" do
-        expect(event_content.shop_resources.map { |r| r["uid"] }).to contain_exactly("8500000")
-      end
-    end
-  end
-
-
   LOCALIZATION_STUBS = {
     "jp" => { "EventName" => { "701" => "特殊作戦・デカグラマトン編", "801" => "桜花爛漫お祭り騒ぎ！" } }.to_json,
     "kr" => { "EventName" => { "701" => "특수 작전 데카그라마톤 편", "801" => "벚꽃만발 축제대소동!" } }.to_json,
-    "en" => { "EventName" => { "701" => "Special Mission Decagrammaton", "801" => "Cherry Blossom Festival Commotion!" } }.to_json
+    "en" => { "EventName" => { "701" => "Special Mission Decagrammaton", "801" => "Cherry Blossom Festival Commotion!" } }.to_json,
   }.freeze
+
+  describe "normalized mechanics" do
+    let!(:event_content) { FactoryBot.create(:event_content, uid: "801") }
+    let!(:run) do
+      EventContentRun.create!(event_content_uid: event_content.uid, run_type: "first", source_event_content_uid: 801, position: 0)
+    end
+
+    before do
+      stage = EventContentRunStage.create!(
+        event_content_run: run,
+        uid: "8012301",
+        stage_type: "stage",
+        stage_index: 0,
+        stage_number: "1",
+        enter_cost_type: "currency",
+        enter_cost_uid: "5",
+        enter_cost_amount: 10,
+        position: 0,
+      )
+      EventContentRunStageReward.create!(
+        event_content_run_stage: stage,
+        reward_type: "item",
+        reward_uid: "80100",
+        amount: 5,
+        probability: 1,
+        tag: "Default",
+        position: 0,
+      )
+    end
+
+    it "reads mechanics from normalized runs" do
+      expect(event_content.stages(run_type: "first").first).to include(
+        "uid" => "8012301",
+        "stage_type" => "stage",
+        "rewards" => [include("reward_uid" => "80100", "probability" => "1.0")],
+      )
+    end
+
+    it "uses first-run mechanics for permanent schedules" do
+      expect(event_content.stages(run_type: "permanent")).to eq(event_content.stages(run_type: "first"))
+    end
+  end
 
   describe ".sync!" do
     before do
       stub_request(:get, "https://schaledb.com/data/kr/events.min.json")
         .to_return(body: ActiveSupport::Gzip.decompress(File.read("spec/_fixtures/events.json.gz")))
-
       LOCALIZATION_STUBS.each do |lang_path, body|
-        stub_request(:get, "https://schaledb.com/data/#{lang_path}/localization.min.json")
-          .to_return(body: body)
+        stub_request(:get, "https://schaledb.com/data/#{lang_path}/localization.min.json").to_return(body: body)
       end
-
       allow(SchaleDB::V1::Images).to receive(:event_logo).and_return(nil)
     end
 
-    subject { EventContent.sync! }
+    subject(:sync) { described_class.sync! }
 
-    it "returns nil" do
-      expect(subject).to be_nil
+    it "keeps SchaleDB ownership for event records, translations, and GL/CN schedules only" do
+      sync
+
+      event = described_class.find_by!(uid: "701")
+      expect(event.name).to eq("특수 작전 데카그라마톤 편")
+      expect(event.name("ja")).to eq("特殊作戦・デカグラマトン編")
+      expect(event.schedules.distinct.pluck(:region)).to contain_exactly("gl", "cn")
+      expect(event.schedules.where(region: "jp")).to be_empty
     end
 
-    it "creates EventContent records" do
-      expect { subject }.to change { EventContent.count }.by(56)
-    end
-
-    it "sets the correct uid and baql_id" do
-      subject
-
-      event_701 = EventContent.find_by(uid: "701")
-      expect(event_701).to be_present
-      expect(event_701.baql_id).to eq("baql::events::701")
-    end
-
-    describe "schedule creation" do
-      before { subject }
-
-      context "event 701 (Original + Permanent, no Rerun)" do
-        let(:event_content) { EventContent.find_by(uid: "701") }
-
-        it "creates schedules only for existing run types" do
-          expect(event_content.schedules.pluck(:run_type).uniq).to contain_exactly("first", "permanent")
-        end
-
-        it "creates 3 region schedules per run type" do
-          expect(event_content.schedules.where(run_type: "first").count).to eq(3)
-          expect(event_content.schedules.where(run_type: "permanent").count).to eq(3)
-        end
-
-        it "maps timestamps to correct start_at and end_at for Original/jp" do
-          schedule = event_content.schedules.find_by(region: "jp", run_type: "first")
-          expect(schedule.start_at).to eq(Time.zone.at(1701828000))
-          expect(schedule.end_at).to eq(Time.zone.at(1703037600))
-        end
-
-        it "sets end_at to nil when close timestamp is 4102412400 (무기한)" do
-          schedule = event_content.schedules.find_by(region: "cn", run_type: "permanent")
-          expect(schedule.end_at).to be_nil
-        end
-
-        it "sets end_at for non-permanent schedules normally" do
-          schedule = event_content.schedules.find_by(region: "jp", run_type: "permanent")
-          expect(schedule.end_at).to eq(Time.zone.at(1729648800))
-        end
-      end
-
-      context "event 801 (Original + Rerun + Permanent)" do
-        let(:event_content) { EventContent.find_by(uid: "801") }
-
-        it "creates schedules for all run types" do
-          expect(event_content.schedules.pluck(:run_type).uniq).to contain_exactly("first", "rerun", "permanent")
-        end
-
-        it "creates 9 schedules total (3 run types × 3 regions)" do
-          expect(event_content.schedules.count).to eq(9)
-        end
-
-        it "sets end_at to nil for all Permanent schedules (all 4102412400)" do
-          permanent_schedules = event_content.schedules.where(run_type: "permanent")
-          expect(permanent_schedules.pluck(:end_at)).to all(be_nil)
-        end
-
-        it "maps Rerun timestamps correctly" do
-          schedule = event_content.schedules.find_by(region: "gl", run_type: "rerun")
-          expect(schedule.start_at).to eq(Time.zone.at(1663639200))
-          expect(schedule.end_at).to eq(Time.zone.at(1664244000))
-        end
-      end
-    end
-
-    describe "idempotency" do
-      it "does not create duplicate records when called twice" do
-        subject
-        expect { EventContent.sync! }.not_to change { EventContent.count }
-      end
-
-      it "does not create duplicate schedules when called twice" do
-        subject
-        expect { EventContent.sync! }.not_to change { EventContentSchedule.count }
-      end
-
-      it "updates existing schedules on re-sync" do
-        subject
-
-        schedule = EventContent.find_by(uid: "701").schedules.find_by(region: "jp", run_type: "first")
-        original_start_at = schedule.start_at
-
-        # 데이터가 바뀌었다고 가정하고 재실행해도 레코드가 중복 생성되지 않음
-        EventContent.sync!
-        schedule.reload
-
-        expect(schedule.start_at).to eq(original_start_at)
-      end
-    end
-
-    describe "name translation" do
-      before { subject }
-
-      it "returns the ko name by default" do
-        event = EventContent.find_by(uid: "701")
-        expect(event.name).to eq("특수 작전 데카그라마톤 편")
-      end
-
-      it "returns the ja name when specified" do
-        event = EventContent.find_by(uid: "701")
-        expect(event.name("ja")).to eq("特殊作戦・デカグラマトン編")
-      end
-
-      it "returns the en name when specified" do
-        event = EventContent.find_by(uid: "801")
-        expect(event.name("en")).to eq("Cherry Blossom Festival Commotion!")
-      end
-
-      it "returns nil for an event without a translation" do
-        event = EventContent.find_by(uid: "701")
-        expect(event.name("zh")).to be_nil
-      end
-
-      describe "idempotency" do
-        it "does not create duplicate Translation records when called twice" do
-          expect { EventContent.sync! }.not_to change { Translation.count }
-        end
-      end
+    it "is idempotent" do
+      sync
+      expect { sync }.not_to change { [described_class.count, EventContentSchedule.count, Translation.count] }
     end
   end
 end

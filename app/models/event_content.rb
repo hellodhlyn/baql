@@ -1,75 +1,64 @@
 class EventContent < ApplicationRecord
   include Translatable
-  include EventMinigameable
   include ImageSyncable
 
-  after_commit :duplicate_first_run_items_for_rerun!, if: :should_duplicate_first_run_items_for_rerun?
-
   has_many :schedules, class_name: "EventContentSchedule", foreign_key: :event_content_uid, primary_key: :uid
+  has_many :event_content_runs, primary_key: :uid, foreign_key: :event_content_uid, dependent: :delete_all
 
   validates :uid, presence: true, uniqueness: true
   validates :baql_id, presence: true
 
   BAQL_ID_PREFIX = "baql::events::"
-
   RUN_TYPE_MAP = {
-    "Original"  => "first",
-    "Rerun"     => "rerun",
-    "Permanent" => "permanent"
+    "Original" => "first",
+    "Rerun" => "rerun",
+    "Permanent" => "permanent",
   }.freeze
-
+  RUN_TYPE_FALLBACK = { "permanent" => "first" }.freeze
   LOGO_LOCALES = %w[Jp Kr].freeze
-
-  REGION_MAP = {
-    "Jp"     => "jp",
+  SCHALE_DB_SCHEDULE_REGION_MAP = {
     "Global" => "gl",
-    "Cn"     => "cn"
+    "Cn" => "cn",
   }.freeze
 
   translatable :name
 
-  KNOWN_REWARD_TYPES = %w[currency item equipment furniture].freeze
-
   def self.sync!
-    # 이벤트 일정 동기화
-    events_data = SchaleDB::V1::Data.events
-    events = events_data["Events"] || []
-
+    events = SchaleDB::V1::Data.events["Events"] || []
     events.each do |event_data|
-      event_id = event_data["Id"].to_s
+      event_id = event_data.fetch("Id").to_s
       event_content = find_or_initialize_by(uid: event_id, baql_id: "#{BAQL_ID_PREFIX}#{event_id}")
+      needs_logo_sync = event_content.new_record? || !Translation.exists?(
+        key: "#{event_content.translation_key_prefix}::name",
+        language: "ja",
+      )
       event_content.save!
-      sync_event_logos!(event_content) if event_content.previously_new_record?
+      sync_event_logos!(event_content) if needs_logo_sync
 
-      # Original, Rerun, Permanent 각각 처리
       RUN_TYPE_MAP.each do |run_type_key, run_type|
-        next unless event_data[run_type_key]
-
         schedule_data = event_data[run_type_key]
+        next unless schedule_data
 
-        # 각 서버별로 일정 upsert
-        REGION_MAP.each do |region_key, region|
+        SCHALE_DB_SCHEDULE_REGION_MAP.each do |region_key, region|
           open_timestamp = schedule_data["EventOpen#{region_key}"]
           close_timestamp = schedule_data["EventClose#{region_key}"]
           next unless open_timestamp && close_timestamp
 
           start_at = timestamp_to_datetime(open_timestamp)
-          end_at = timestamp_to_datetime(close_timestamp)
           next unless start_at
 
-          schedule = event_content.schedules.find_or_initialize_by(region: region, run_type: run_type)
-          schedule.update!(start_at: start_at, end_at: end_at)
+          event_content.schedules.find_or_initialize_by(region: region, run_type: run_type).update!(
+            start_at: start_at,
+            end_at: timestamp_to_datetime(close_timestamp),
+          )
         end
       end
     end
 
-    # 이벤트 이름 번역 동기화
     Constants::LANGUAGE_MAP.each do |data_path, lang|
-      localization_data = SchaleDB::V1::Data.localization(data_path)
-      event_names = localization_data["EventName"] || {}
+      event_names = SchaleDB::V1::Data.localization(data_path)["EventName"] || {}
       event_names.each do |event_id, name|
-        event_content = find_by(uid: event_id)
-        event_content&.set_name(name, lang)
+        find_by(uid: event_id)&.set_name(name, lang)
       end
     end
 
@@ -80,103 +69,28 @@ class EventContent < ApplicationRecord
     baql_id
   end
 
-  def stages(run_type: "first")
-    raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
-    return [] unless raw
+  def event_run(run_type)
+    event_content_runs.find_by(run_type: mechanics_run_type(run_type))
+  end
 
-    (raw["stage"] || {}).flat_map do |stage_type, stage_list|
-      stage_list.each_with_index.map do |s, index|
-         {
-          "uid"               => s["Id"].to_s,
-          "stage_type"        => stage_type,
-          "stage_index"       => index,
-          "stage_number"      => s["StageNumber"].to_s,
-          "enter_cost_type"   => s["StageEnterCostTypeStr"]&.downcase,
-          "enter_cost_uid"    => s["StageEnterCostId"]&.to_s,
-          "enter_cost_amount" => s["StageEnterCostAmount"],
-          "rewards"           => normalize_rewards(s["EventContentStageReward"] || []),
-        }
-      end
-    end
+  def stages(run_type: "first")
+    event_run(run_type)&.stages_payload || []
   end
 
   def bonuses(run_type: "first")
-    raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
-    return [] unless raw
-
-    item_type_to_uid = (raw["currency"] || []).each_with_object({}) do |c, h|
-      h[c["EventContentItemType"]] = c["ItemUniqueId"].to_s
-    end
-
-    (raw["bonus"] || {}).flat_map do |student_uid, data|
-      item_types  = data["EventContentItemType"] || []
-      percentages = data["BonusPercentage"]      || []
-
-      item_types.zip(percentages).filter_map do |item_type, raw_percentage|
-        reward_uid = item_type_to_uid[item_type]
-        next unless reward_uid
-
-        {
-          "student_uid" => student_uid,
-          "reward_uid"  => reward_uid,
-          "reward_type" => "item",
-          "percentage"  => (BigDecimal(raw_percentage.to_s) / 10000),
-        }
-      end
-    end
+    event_run(run_type)&.bonuses_payload || []
   end
 
   def shop_resources(run_type: "first")
-    raw = run_type == "rerun" ? raw_data_rerun : raw_data_first
-    return [] unless raw
-
-    (raw["shop"] || {}).values.flat_map do |item_list|
-      item_list.filter_map { |item| normalize_shop_item(item) }
-    end
+    event_run(run_type)&.shop_resources_payload || []
   end
 
-  private
-
-  def should_duplicate_first_run_items_for_rerun?
-    saved_change_to_raw_data_rerun? &&
-      raw_data_rerun.present? &&
-      raw_data_rerun_before_last_save.blank? &&
-      raw_data_first.present?
+  def minigame_configs(run_type: "first")
+    event_run(run_type)&.minigame_configs_payload || []
   end
 
-  def duplicate_first_run_items_for_rerun!
-    first_run_item_uids_by_type.each do |item_type, first_uid|
-      rerun_uid = rerun_item_uids_by_type[item_type]
-      next if rerun_uid.blank? || rerun_uid == first_uid
-      next if Item.exists?(uid: rerun_uid)
-
-      first_item = Item.find_by(uid: first_uid)
-      unless first_item
-        Rails.logger.warn("Skipping rerun item duplication for event #{uid}: missing source item #{first_uid} (type #{item_type})")
-        next
-      end
-
-      Rails.logger.info("Duplicating event item #{first_uid} -> #{rerun_uid} for event #{uid} (type #{item_type})")
-      first_item.duplicate!(rerun_uid)
-    end
-  end
-
-  def first_run_item_uids_by_type
-    event_item_uids_by_type(raw_data_first)
-  end
-
-  def rerun_item_uids_by_type
-    event_item_uids_by_type(raw_data_rerun)
-  end
-
-  def event_item_uids_by_type(raw)
-    (raw["currency"] || []).each_with_object({}) do |currency, map|
-      item_type = currency["EventContentItemType"]
-      item_uid = currency["ItemUniqueId"]&.to_s
-      next if item_type.nil? || item_uid.blank?
-
-      map[item_type.to_s] = item_uid
-    end
+  def mechanics_run_type(run_type)
+    RUN_TYPE_FALLBACK.fetch(run_type.to_s, run_type.to_s)
   end
 
   def self.sync_event_logos!(event_content)
@@ -189,71 +103,9 @@ class EventContent < ApplicationRecord
     end
   end
 
-  def normalize_shop_item(item)
-    goods = item["Goods"]&.first
-    return nil unless goods
-
-    shop_amount = item["PurchaseCountLimit"]&.then { |n| n > 0 ? n : nil }
-
-    {
-      "uid"                     => item["Id"].to_s,
-      "resource_type"           => goods["ParcelTypeStr"]&.first&.downcase,
-      "resource_uid"            => goods["ParcelId"]&.first&.to_s,
-      "resource_amount"         => goods["ParcelAmount"]&.first,
-      "payment_resource_type"   => goods["ConsumeParcelTypeStr"]&.first&.downcase,
-      "payment_resource_uid"    => goods["ConsumeParcelId"]&.first&.to_s,
-      "payment_resource_amount" => goods["ConsumeParcelAmount"]&.first,
-      "shop_amount"             => shop_amount,
-      "purchase_tiers"          => normalize_purchase_tiers(goods, shop_amount),
-    }
-  end
-
-  def normalize_purchase_tiers(goods, shop_amount)
-    amounts = goods["ConsumeExtraAmount"]
-    steps = goods["ConsumeExtraStep"]
-
-    if amounts.present? && steps.present?
-      start_quantity = 1
-
-      amounts.zip(steps).each_with_index.map do |(amount, quantity), index|
-        tier = normalize_purchase_tier(goods, index, start_quantity, quantity, amount)
-        start_quantity += quantity.to_i
-        tier
-      end
-    else
-      normalize_purchase_tier(goods, 0, 1, shop_amount, goods["ConsumeParcelAmount"]&.first).then { |tier| [tier] }
-    end
-  end
-
-  def normalize_purchase_tier(goods, index, start_quantity, quantity, unit_price)
-    {
-      "tier_index"            => index,
-      "start_quantity"        => start_quantity,
-      "quantity"              => quantity,
-      "unit_price"            => unit_price,
-      "payment_resource_type" => goods["ConsumeParcelTypeStr"]&.first&.downcase,
-      "payment_resource_uid"  => goods["ConsumeParcelId"]&.first&.to_s,
-    }
-  end
-
-  def normalize_rewards(raw_rewards)
-    raw_rewards
-      .select { |r| KNOWN_REWARD_TYPES.include?(r["RewardParcelTypeStr"]&.downcase) }
-      .map    { |r| normalize_reward(r) }
-  end
-
-  def normalize_reward(r)
-    {
-      "reward_uid"  => r["RewardId"].to_s,
-      "reward_type" => r["RewardParcelTypeStr"].downcase,
-      "amount"      => r["RewardAmount"],
-      "probability" => (BigDecimal(r["RewardProb"].to_s) / 10000).to_s("F"),
-      "tag"         => r["RewardTagStr"],
-    }
-  end
-
   def self.timestamp_to_datetime(timestamp)
     return nil if timestamp.nil? || timestamp >= 4102412400
+
     Time.zone.at(timestamp)
   end
 end
