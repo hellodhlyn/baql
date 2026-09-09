@@ -4,6 +4,7 @@ module Types
     "item"      => -> { ::Item },
     "equipment" => -> { ::Equipment },
     "furniture" => -> { ::Furniture },
+    "emblem"    => -> { ::Emblem },
   }.freeze
 
   module ResourceLookup
@@ -234,6 +235,15 @@ module Types
     end
     def minigame_configs(run_type:)
       load_run(run_type).then { |run| run&.minigame_configs_payload || [] }
+    end
+
+    field :missions, [Types::EventContentMissionType], null: false do
+      argument :run_type, RunTypeEnum, required: true
+    end
+    def missions(run_type:)
+      dataloader
+        .with(Sources::EventContentMissionsByEventUid, run_type)
+        .load(object.uid)
     end
 
     private

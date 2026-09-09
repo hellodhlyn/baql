@@ -4,7 +4,7 @@ class BaqlSchema < GraphQL::Schema
   query(Types::QueryType)
   mutation(Types::MutationType)
 
-  orphan_types Types::CurrencyType, Types::EquipmentType, Types::FurnitureType
+  orphan_types Types::CurrencyType, Types::EquipmentType, Types::FurnitureType, Types::EmblemType
 
   # For batch-loading (see https://graphql-ruby.org/dataloader/overview.html)
   use GraphQL::Dataloader

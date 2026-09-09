@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_31_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_30_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -51,6 +51,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_000000) do
     t.index ["event_uid"], name: "index_deprecated_event_shop_resources_on_event_uid"
   end
 
+  create_table "emblems", force: :cascade do |t|
+    t.string "baql_id", null: false
+    t.string "category", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "image_asset_keys", default: {}, null: false
+    t.integer "rarity", null: false
+    t.jsonb "raw_data", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_emblems_on_uid", unique: true
+  end
+
   create_table "equipments", force: :cascade do |t|
     t.string "baql_id", null: false
     t.string "category", null: false
@@ -85,6 +97,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_000000) do
     t.integer "position", null: false
     t.datetime "updated_at", null: false
     t.index ["event_content_run_id", "minigame_type"], name: "idx_event_run_minigames_unique", unique: true
+  end
+
+  create_table "event_content_run_missions", force: :cascade do |t|
+    t.string "category", null: false
+    t.boolean "completion_extension", null: false
+    t.string "completion_reference_mission_uid"
+    t.integer "completion_reference_required_count", default: 0, null: false
+    t.integer "condition_count", null: false
+    t.jsonb "condition_parameter_tags", null: false
+    t.jsonb "condition_parameters", null: false
+    t.integer "condition_reward_amount"
+    t.string "condition_reward_type"
+    t.string "condition_reward_uid"
+    t.string "condition_type", null: false
+    t.datetime "created_at", null: false
+    t.integer "display_order", null: false
+    t.bigint "event_content_run_id", null: false
+    t.jsonb "localizations", null: false
+    t.integer "position", null: false
+    t.string "pre_mission_uid"
+    t.string "reset_type", null: false
+    t.integer "reward_amount", null: false
+    t.string "reward_type", null: false
+    t.string "reward_uid", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["condition_reward_type", "condition_reward_uid"], name: "idx_event_run_missions_condition_reward"
+    t.index ["event_content_run_id", "position"], name: "idx_event_run_missions_position"
+    t.index ["event_content_run_id", "uid"], name: "idx_event_run_missions_unique", unique: true
+    t.index ["reward_type", "reward_uid"], name: "idx_event_run_missions_reward"
   end
 
   create_table "event_content_run_shop_purchase_tiers", force: :cascade do |t|

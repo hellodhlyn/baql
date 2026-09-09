@@ -9,6 +9,7 @@ module Types
       when ::Currency  then "currency"
       when ::Equipment then "equipment"
       when ::Furniture then "furniture"
+      when ::Emblem then "emblem"
       else raise "Unexpected object: #{object}"
       end
     end
@@ -41,6 +42,7 @@ module Types
         when ::Currency  then Types::CurrencyType
         when ::Equipment then Types::EquipmentType
         when ::Furniture then Types::FurnitureType
+        when ::Emblem then Types::EmblemType
         else raise "Unexpected object: #{object}"
         end
       end

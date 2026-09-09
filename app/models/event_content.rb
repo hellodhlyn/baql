@@ -89,6 +89,10 @@ class EventContent < ApplicationRecord
     event_run(run_type)&.minigame_configs_payload || []
   end
 
+  def missions(run_type: "first")
+    event_run(run_type)&.missions&.to_a || []
+  end
+
   def mechanics_run_type(run_type)
     RUN_TYPE_FALLBACK.fetch(run_type.to_s, run_type.to_s)
   end

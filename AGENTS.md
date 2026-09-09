@@ -61,6 +61,17 @@ uid, baql_id, category, sub_category, rarity, tags(string[]), raw_data(jsonb)
 - Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::furnitures::{uid}`
 
+#### `Emblem` — `emblems` table
+```
+uid, baql_id, category, rarity, raw_data(jsonb), image_asset_keys(jsonb)
+```
+- `Translatable`: `name`, `description`
+- imported from the private `baql-sync` resource snapshot
+- `raw_data` is the complete `EmblemExcel` row and is snapshot-owned
+- localized Emblem backgrounds are extracted and uploaded by BAQL Sync; imported object keys are stored in `image_asset_keys`
+- GraphQL `imageUrl(lang:)` returns the requested background, falling back to Korean and then Japanese when needed
+- `baql_id` format: `baql::emblems::{uid}`
+
 ---
 
 ### Events
@@ -77,6 +88,20 @@ uid, baql_id, raw_data_first(jsonb), raw_data_rerun(jsonb)
   - `stages(run_type:)` → array of stage hashes
   - `bonuses(run_type:)` → array of student bonus hashes
   - `shop_resources(run_type:)` → array of shop item hashes
+  - `missions(run_type:)` → ordered `EventContentRunMission` records; `permanent` resolves to `first`
+
+#### `EventContentRunMission` — `event_content_run_missions` table
+```
+event_content_run_id, uid, category, reset_type, display_order, position,
+localizations(jsonb), condition_type, condition_count,
+condition_parameters(jsonb), condition_parameter_tags(jsonb),
+reward_type, reward_uid, reward_amount,
+condition_reward_type(nullable), condition_reward_uid(nullable), condition_reward_amount(nullable),
+pre_mission_uid(nullable), completion_reference_mission_uid(nullable),
+completion_reference_required_count, completion_extension
+```
+- child of `EventContentRun`; mission references remain scalar UIDs and may cross runs
+- descriptions contain canonical `{{n}}` templates with localized parameters
 
 #### `EventContentSchedule` — `event_content_schedules` table
 ```
@@ -295,7 +320,7 @@ Provides `ATTACK_TYPES` and `DEFENSE_TYPES` constants (used by `Raid`).
 | `mini_event_contents` | MiniEventContentsQuery |
 
 ### Key Interfaces
-- **`ResourceInterface`**: `type, uid, name, rarity` — implemented by `Currency`, `Item`, `Equipment`, `Furniture`
+- **`ResourceInterface`**: `type, uid, name, description, rarity` — implemented by `Currency`, `Item`, `Equipment`, `Furniture`, `Emblem`
 
 ### Resource Type Mapping (inside `EventContentType`)
 ```ruby
@@ -304,6 +329,7 @@ RESOURCE_CLASS_MAP = {
   "item"      => -> { ::Item },
   "equipment" => -> { ::Equipment },
   "furniture" => -> { ::Furniture },
+  "emblem"    => -> { ::Emblem },
 }
 ```
 

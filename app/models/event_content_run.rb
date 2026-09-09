@@ -6,6 +6,7 @@ class EventContentRun < ApplicationRecord
   has_many :bonuses, -> { order(:position) }, class_name: "EventContentRunBonus", dependent: :delete_all
   has_many :shop_resources, -> { order(:position) }, class_name: "EventContentRunShopResource", dependent: :delete_all
   has_many :minigames, -> { order(:position) }, class_name: "EventContentRunMinigame", dependent: :delete_all
+  has_many :missions, -> { order(:position) }, class_name: "EventContentRunMission", dependent: :delete_all
 
   validates :event_content_uid, presence: true
   validates :run_type, inclusion: { in: RUN_TYPES }

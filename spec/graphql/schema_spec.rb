@@ -14,13 +14,39 @@ RSpec.describe "GraphQL schema", type: :graphql do
           field.arguments["lang"].default_value == Constants::DEFAULT_LANGUAGE
       end,
     )
-    expect(%w[Item Currency Equipment Furniture]).to all(
+    expect(%w[Item Currency Equipment Furniture Emblem]).to all(
       satisfy do |type_name|
         BaqlSchema.types[type_name].fields.values_at("name", "description").all? do |field|
           field.arguments.key?("lang")
         end
       end,
     )
+  end
+
+  it "exposes event mission descriptions, conditions, rewards, and references" do
+    expect(BaqlSchema.types["ResourceTypeEnum"].values).to include("emblem")
+    expect(BaqlSchema.types["EventContent"].fields["missions"].type.to_type_signature)
+      .to eq("[EventContentMission!]!")
+    expect(BaqlSchema.types["EventContentMission"].fields).to include(
+      "uid",
+      "category",
+      "resetType",
+      "displayOrder",
+      "description",
+      "condition",
+      "reward",
+      "conditionReward",
+      "preMissionUid",
+      "completionReferenceMissionUid",
+      "completionReferenceRequiredCount",
+      "completionExtension",
+    )
+    expect(BaqlSchema.types["EventContentMissionDescription"].fields).to include("template", "parameters")
+    expect(BaqlSchema.types["EventContentMissionCondition"].fields).to include("type", "count", "parameters", "parameterTags")
+    expect(BaqlSchema.types["EventContentMissionReward"].fields).to include("resource", "amount")
+    image_field = BaqlSchema.types["Emblem"].fields.fetch("imageUrl")
+    expect(image_field.arguments.fetch("lang").type.to_type_signature).to eq("Language")
+    expect(image_field.arguments.fetch("lang").default_value).to eq(Constants::DEFAULT_LANGUAGE)
   end
 
   it "marks legacy minigame payment fields as deprecated" do
