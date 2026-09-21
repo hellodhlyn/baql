@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_30_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_22_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -282,16 +282,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_200000) do
     t.index ["uid"], name: "index_events_on_uid", unique: true
   end
 
+  create_table "furniture_groups", force: :cascade do |t|
+    t.string "baql_id", null: false
+    t.datetime "created_at", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_furniture_groups_on_uid", unique: true
+  end
+
   create_table "furnitures", force: :cascade do |t|
     t.string "baql_id", null: false
     t.string "category", null: false
     t.datetime "created_at", null: false
+    t.string "furniture_group_uid"
     t.integer "rarity", null: false
     t.jsonb "raw_data"
     t.string "sub_category"
     t.string "tags", default: [], null: false, array: true
     t.string "uid", null: false
     t.datetime "updated_at", null: false
+    t.index ["furniture_group_uid"], name: "index_furnitures_on_furniture_group_uid"
     t.index ["uid"], name: "index_furnitures_on_uid", unique: true
   end
 
