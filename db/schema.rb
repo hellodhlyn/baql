@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_30_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_22_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -282,16 +282,54 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_200000) do
     t.index ["uid"], name: "index_events_on_uid", unique: true
   end
 
+  create_table "furniture_catalog_states", force: :cascade do |t|
+    t.datetime "assets_imported_at"
+    t.boolean "assets_ready", default: false, null: false
+    t.datetime "created_at", null: false
+    t.boolean "data_ready", default: false, null: false
+    t.string "database_sha256"
+    t.integer "furniture_count", default: 0, null: false
+    t.datetime "imported_at"
+    t.integer "preview_count", default: 0, null: false
+    t.integer "theme_count", default: 0, null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "furniture_template_previews", force: :cascade do |t|
+    t.string "baql_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "display_order", null: false
+    t.string "furniture_theme_uid", null: false
+    t.string "image_asset_key"
+    t.string "thumbnail_asset_key"
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["furniture_theme_uid", "display_order"], name: "index_furniture_previews_on_theme_and_display_order", unique: true
+    t.index ["uid"], name: "index_furniture_template_previews_on_uid", unique: true
+  end
+
+  create_table "furniture_themes", force: :cascade do |t|
+    t.string "baql_id", null: false
+    t.datetime "created_at", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_furniture_themes_on_uid", unique: true
+  end
+
   create_table "furnitures", force: :cascade do |t|
     t.string "baql_id", null: false
     t.string "category", null: false
     t.datetime "created_at", null: false
+    t.string "image_asset_key"
+    t.boolean "in_catalog", default: false, null: false
     t.integer "rarity", null: false
     t.jsonb "raw_data"
     t.string "sub_category"
     t.string "tags", default: [], null: false, array: true
+    t.string "theme_uid"
     t.string "uid", null: false
     t.datetime "updated_at", null: false
+    t.index ["theme_uid"], name: "index_furnitures_on_theme_uid"
     t.index ["uid"], name: "index_furnitures_on_uid", unique: true
   end
 
@@ -701,5 +739,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_200000) do
     t.index ["key", "language"], name: "index_translations_on_key_and_language", unique: true
   end
 
+  add_foreign_key "furniture_template_previews", "furniture_themes", column: "furniture_theme_uid", primary_key: "uid", on_delete: :cascade
+  add_foreign_key "furnitures", "furniture_themes", column: "theme_uid", primary_key: "uid", on_delete: :nullify
   add_foreign_key "joint_firing_drill_schedules", "joint_firing_drills", column: "drill_uid", primary_key: "uid"
 end
