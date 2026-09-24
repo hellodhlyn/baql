@@ -53,13 +53,32 @@ uid, baql_id, category, sub_category, rarity, raw_data(jsonb)
 
 #### `Furniture` — `furnitures` table
 ```
-uid, baql_id, category, sub_category, rarity, tags(string[]), raw_data(jsonb)
+uid, baql_id, category, sub_category, rarity, tags(string[]), raw_data(jsonb),
+theme_uid(nullable), in_catalog(bool), image_asset_key(nullable)
 ```
-- `Translatable`: `name`, `description`
-- imported from the private `baql-sync` resource snapshot
-- images are extracted and uploaded by BAQL Sync at `images/resources/furnitures/:uid.webp`
+- `Translatable`: `name`, `description`; optionally belongs to `FurnitureTheme`
+- imported from the private `baql-sync` resource snapshot; `FurnitureExcel.SetGroudpId` supplies `theme_uid`, with `0` mapped to null
+- `in_catalog` distinguishes the current canonical full snapshot from retained legacy furniture rows
+- images are extracted and uploaded by BAQL Sync at `images/resources/furnitures/:uid.webp`; the imported asset key is used by GraphQL
 - Korean/Japanese translations are snapshot-owned; existing English translations are preserved
 - `baql_id` format: `baql::furnitures::{uid}`
+
+#### `FurnitureTheme` — `furniture_themes` table
+```
+uid, baql_id
+```
+- `Translatable`: `name`, `description`; has many canonical furnitures and curated template previews
+- theme names and descriptions come from `FurnitureGroupExcel` and `LocalizeEtcExcel`
+- Excel has no direct group-to-template foreign key; the preview mapping is explicitly curated and reviewed against group names/template composition, not inferred from furniture placements
+
+#### `FurnitureTemplatePreview` — `furniture_template_previews` table
+```
+uid, baql_id, furniture_theme_uid, display_order,
+image_asset_key, thumbnail_asset_key
+```
+- localized title comes from `FurnitureTemplateExcel.FunitureTemplateTitle` and `LocalizeEtcExcel`
+- preview image and thumbnail asset keys are owned by the resource image manifest
+- catalog queries require both resource data and furniture assets to be ready
 
 #### `Emblem` — `emblems` table
 ```
@@ -309,6 +328,9 @@ Provides `ATTACK_TYPES` and `DEFENSE_TYPES` constants (used by `Raid`).
 | `student(uid)` | StudentQuery |
 | `students` | StudentsQuery |
 | `items` | ItemsQuery |
+| `furnitures(uids)` | FurnituresQuery — omitted `uids` returns the canonical catalog; `[]` returns an empty list |
+| `furniture_themes` | FurnitureThemesQuery |
+| `furniture_theme(uid)` | FurnitureThemeQuery |
 | `main_stories` | MainStoriesQuery |
 | `recruitment_group(uid)` | RecruitmentGroupQuery |
 | `recruitment_groups` | RecruitmentGroupsQuery |
