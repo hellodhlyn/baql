@@ -3,11 +3,8 @@ class Furniture < ApplicationRecord
 
   BAQL_ID_PREFIX = "baql::furnitures::"
 
-  belongs_to :furniture_group,
-             class_name: "FurnitureGroup",
-             primary_key: :uid,
-             foreign_key: :furniture_group_uid,
-             optional: true
+  belongs_to :theme, class_name: "FurnitureTheme", foreign_key: :theme_uid, primary_key: :uid,
+    inverse_of: :furnitures, optional: true
 
   validates :uid, presence: true, uniqueness: true
 

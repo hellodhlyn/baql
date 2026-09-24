@@ -16,9 +16,10 @@ module Types
     field :students, resolver: Queries::StudentsQuery
     field :student_catalog, resolver: Queries::StudentCatalogQuery
     field :items, resolver: Queries::ItemsQuery
+    field :furnitures, resolver: Queries::FurnituresQuery
+    field :furniture_themes, resolver: Queries::FurnitureThemesQuery
+    field :furniture_theme, resolver: Queries::FurnitureThemeQuery
     field :equipments, resolver: Queries::EquipmentsQuery
-    field :furnitures,      resolver: Queries::FurnituresQuery
-    field :furniture_groups, resolver: Queries::FurnitureGroupsQuery
     field :main_stories, resolver: Queries::MainStoriesQuery
     field :recruitment_group,    resolver: Queries::RecruitmentGroupQuery
     field :recruitment_groups,   resolver: Queries::RecruitmentGroupsQuery
